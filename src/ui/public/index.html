@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>apps of dots · Setup center</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <button class="brand" data-select="overview" aria-label="apps of dots home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>apps of
+        dots<span class="brand-period">.</span>
+      </button>
+      <div class="sidebar-label">YOUR WORKSPACE</div>
+      <nav aria-label="Apps">
+        <button class="nav-item active" data-select="overview">
+          <span aria-hidden="true">⊞</span>Overview
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" data-select="discord">
+          <span class="nav-icon discord">D</span>Discord<span
+            class="nav-status"
+            id="nav-discord"
+          ></span>
+        </button>
+        <button class="nav-item" data-select="telegram">
+          <span class="nav-icon telegram">↗</span>Telegram<span
+            class="nav-status"
+            id="nav-telegram"
+          ></span>
+        </button>
+        <button class="nav-item" data-select="whatsapp">
+          <span class="nav-icon whatsapp">W</span>WhatsApp<span
+            class="nav-status"
+            id="nav-whatsapp"
+          ></span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="local-light"></span> Running on your computer
+        <p>Your apps, your credentials,<br />your connection.</p>
+        <a href="https://github.com/rokrokss/apps-of-dots" target="_blank" rel="noreferrer"
+          >Project & documentation ↗</a
+        >
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span>SETUP CENTER</span>
+        <div>
+          <span class="local-badge"><i></i> Local workspace</span
+          ><button id="refresh" class="icon-button" aria-label="Refresh connection status">
+            ↻
+          </button>
+        </div>
+      </header>
+      <main>
+        <div id="notice" class="notice" role="alert" hidden></div>
+        <section id="overview">
+          <div class="hero">
+            <div>
+              <p class="eyebrow">A LITTLE SETUP. A LOT MORE POSSIBLE.</p>
+              <h1>Your apps.<br /><em>Connected to your dot.</em></h1>
+              <p class="intro">
+                Bring the apps you use into your AI’s world.<br />Choose an app. We’ll help you
+                connect the dots.
+              </p>
+            </div>
+            <div class="connection-art" aria-hidden="true">
+              <span class="orbit one">D</span><span class="orbit two">↗</span
+              ><span class="orbit three">W</span
+              ><span class="dot-core"><i></i><i></i><i></i><i></i></span
+              ><span class="art-label">a connection of your own</span>
+            </div>
+          </div>
+          <div class="section-heading">
+            <h2>Your apps <span id="app-count">03</span></h2>
+            <span id="connection-count" class="subtle">Checking connections…</span>
+          </div>
+          <div id="app-cards" class="cards" aria-label="Available apps"></div>
+          <div id="prerequisite" class="prerequisite" hidden>
+            <span class="info-icon">i</span>
+            <div>
+              <strong>One small thing before you connect</strong>
+              <p>Install the official tunnel client on this computer. On macOS, run:</p>
+              <div class="copy-row">
+                <code>brew install openai/tools/tunnel-client</code
+                ><button class="text-button" data-copy="brew install openai/tools/tunnel-client">
+                  Copy
+                </button>
+              </div>
+              <a
+                href="https://developers.openai.com/api/docs/guides/secure-mcp-tunnels#set-up-tunnel-client"
+                target="_blank"
+                rel="noreferrer"
+                >Other platforms & installation help ↗</a
+              >
+            </div>
+          </div>
+          <section class="how">
+            <p class="eyebrow">FROM YOUR APP TO YOUR AI</p>
+            <div class="how-grid">
+              <div>
+                <span>01</span>
+                <h3>Connect your app</h3>
+                <p>Use a bot token or sign in with your own account.</p>
+              </div>
+              <div>
+                <span>02</span>
+                <h3>Give it a private tunnel</h3>
+                <p>A connection from this computer to your AI.</p>
+              </div>
+              <div>
+                <span>03</span>
+                <h3>Make it yours</h3>
+                <p>Add the app to ChatGPT and try your first question.</p>
+              </div>
+            </div>
+          </section>
+          <section class="more">
+            <h2>Also in the neighborhood</h2>
+            <p>These projects have their own setup guides.</p>
+            <div>
+              <a
+                href="https://github.com/rokrokss/kakaotalk-bridge"
+                target="_blank"
+                rel="noreferrer"
+                ><span class="mini-icon kakao">K</span>KakaoTalk Bridge <span>Open guide ↗</span></a
+              ><a
+                href="https://github.com/rokrokss/recly/blob/main/docs/recly-events.md"
+                target="_blank"
+                rel="noreferrer"
+                ><span class="mini-icon recly">R</span>Recly Events <span>Open guide ↗</span></a
+              >
+            </div>
+          </section>
+        </section>
+        <section id="detail" hidden>
+          <button class="back-link" data-select="overview">← All apps</button>
+          <div class="detail-heading">
+            <div id="detail-icon" class="app-icon discord">D</div>
+            <div>
+              <p class="eyebrow">YOUR CONNECTION</p>
+              <h1 id="detail-title">Discord</h1>
+            </div>
+            <span id="detail-status" class="badge"></span>
+          </div>
+          <p id="detail-description" class="intro"></p>
+          <div id="app-issue" class="notice" hidden></div>
+          <div id="setup-view">
+            <ol class="steps" aria-label="Setup progress">
+              <li data-step="account"><span>1</span>Connect app</li>
+              <li data-step="tunnel"><span>2</span>Private tunnel</li>
+              <li data-step="progress"><span>3</span>Check connection</li>
+              <li data-step="manage"><span>4</span>Use with AI</li>
+            </ol>
+            <form id="setup-form" autocomplete="off">
+              <section id="account-screen" class="panel" hidden>
+                <div id="discord-account">
+                  <p class="eyebrow">STEP 01 / DISCORD</p>
+                  <h2>Meet your Discord bot.</h2>
+                  <p class="panel-intro">Your bot connects the servers you choose to your dot.</p>
+                  <div class="guide-box">
+                    <strong>Get your bot ready</strong>
+                    <ol>
+                      <li>
+                        Open the
+                        <a
+                          href="https://discord.com/developers/applications"
+                          target="_blank"
+                          rel="noreferrer"
+                          >Discord Developer Portal ↗</a
+                        >
+                        and create or choose an application.
+                      </li>
+                      <li>
+                        In <strong>Bot</strong>, get its token and enable
+                        <strong>Message Content</strong> and
+                        <strong>Server Members</strong> intents.
+                      </li>
+                      <li>
+                        Invite the bot to your server with the permissions you want it to have.
+                      </li>
+                    </ol>
+                    <a
+                      href="https://github.com/rokrokss/apps-of-dots/blob/main/discord/README.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Bot permissions & setup guide ↗</a
+                    >
+                  </div>
+                  <label for="bot-token"
+                    >Bot token
+                    <span id="bot-saved" class="saved-label" hidden
+                      >Saved on this computer</span
+                    ></label
+                  ><input
+                    id="bot-token"
+                    name="botToken"
+                    type="password"
+                    placeholder="Paste your bot token"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="4096"
+                  />
+                  <p class="field-help" id="bot-help">
+                    Stored privately on this computer. It won’t be shown again.
+                  </p>
+                  <details class="advanced">
+                    <summary>Choose specific servers <span>Optional</span></summary>
+                    <label for="guilds">Server IDs</label
+                    ><input
+                      id="guilds"
+                      name="guilds"
+                      value="all"
+                      placeholder="all"
+                      spellcheck="false"
+                    />
+                    <p class="field-help">
+                      Use all, or comma-separated server IDs. The bot’s Discord permissions still
+                      apply.
+                    </p>
+                  </details>
+                </div>
+                <div id="telegram-account" hidden>
+                  <p class="eyebrow">STEP 01 / TELEGRAM</p>
+                  <h2>Your Telegram, connected.</h2>
+                  <p class="panel-intro">
+                    First, get your account’s API credentials. Then we’ll show a QR code to scan on
+                    your phone.
+                  </p>
+                  <div class="guide-box">
+                    <strong>Get your API ID and hash</strong>
+                    <ol>
+                      <li>
+                        Sign in at
+                        <a href="https://my.telegram.org" target="_blank" rel="noreferrer"
+                          >my.telegram.org ↗</a
+                        >.
+                      </li>
+                      <li>
+                        Open <strong>API development tools</strong> and create an application.
+                      </li>
+                      <li>
+                        Copy its <strong>api_id</strong> and <strong>api_hash</strong> into the
+                        fields below.
+                      </li>
+                    </ol>
+                    <p>
+                      You’ll also need Telegram on your phone. If two-step verification is enabled,
+                      we’ll ask for that password after you scan.
+                    </p>
+                  </div>
+                  <label for="api-id">API ID</label
+                  ><input
+                    id="api-id"
+                    inputmode="numeric"
+                    placeholder="e.g. 12345678"
+                    autocomplete="off"
+                    maxlength="20"
+                  />
+                  <label for="api-hash"
+                    >API hash
+                    <span id="hash-saved" class="saved-label" hidden
+                      >Saved on this computer</span
+                    ></label
+                  ><input
+                    id="api-hash"
+                    type="password"
+                    placeholder="Paste your API hash"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="32"
+                  />
+                  <p id="hash-help" class="field-help">
+                    Saved privately on this computer. Leave blank to reuse a saved hash.
+                  </p>
+                  <p class="field-help">
+                    The first setup prepares Python dependencies using uv.
+                    <a
+                      href="https://github.com/rokrokss/apps-of-dots/blob/main/telegram/README.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Installation help ↗</a
+                    >
+                  </p>
+                </div>
+                <div id="whatsapp-account" hidden>
+                  <p class="eyebrow">STEP 01 / WHATSAPP</p>
+                  <h2>Link your phone.</h2>
+                  <p class="panel-intro">
+                    Link this computer to WhatsApp. There’s no developer token to create.
+                  </p>
+                  <div class="guide-box">
+                    <strong>Keep your phone nearby</strong>
+                    <ol>
+                      <li>Open WhatsApp on your phone.</li>
+                      <li>
+                        Go to <strong>Settings → Linked devices → Link a device</strong>. On
+                        Android, Linked devices is in the menu.
+                      </li>
+                      <li>
+                        After the tunnel settings, scan the QR code we show here and approve
+                        linking.
+                      </li>
+                    </ol>
+                    <p>
+                      This computer will appear as a linked device. You can unlink it from your
+                      phone later.
+                    </p>
+                  </div>
+                  <details class="advanced">
+                    <summary>Local bridge port <span>Optional</span></summary>
+                    <label for="bridge-port">Bridge port</label
+                    ><input id="bridge-port" inputmode="numeric" value="8766" maxlength="5" />
+                    <p class="field-help">
+                      Change this only if another app already uses this port.
+                    </p>
+                  </details>
+                  <p class="field-help">
+                    The first setup needs uv, Go 1.26+ and a C compiler.
+                    <a
+                      href="https://github.com/rokrokss/apps-of-dots/blob/main/whatsapp/README.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Installation help ↗</a
+                    >
+                  </p>
+                </div>
+                <div class="panel-actions">
+                  <span id="account-meta" class="field-help">99 tools · Bot account</span
+                  ><button type="button" id="next-step" class="primary">
+                    Continue <span>→</span>
+                  </button>
+                </div>
+              </section>
+              <section id="tunnel-screen" class="panel" hidden>
+                <p class="eyebrow">STEP 02 / PRIVATE TUNNEL</p>
+                <h2>A path to your AI.</h2>
+                <p class="panel-intro">Connect this app through your own OpenAI tunnel.</p>
+                <div class="guide-box">
+                  <strong id="tunnel-app-title">Create a tunnel for Discord</strong>
+                  <ol>
+                    <li>
+                      Open
+                      <a
+                        href="https://platform.openai.com/settings/organization/tunnels"
+                        target="_blank"
+                        rel="noreferrer"
+                        >OpenAI tunnel settings ↗</a
+                      >
+                      and create a tunnel.
+                    </li>
+                    <li>Associate it with the ChatGPT workspace you’ll use, then copy its ID.</li>
+                    <li>
+                      Create a runtime API key with <strong>Tunnels Read + Use</strong>. Creating
+                      the tunnel also needs <strong>Manage</strong>.
+                    </li>
+                  </ol>
+                  <p>
+                    Use a separate tunnel for each app. Your ChatGPT workspace must also allow
+                    custom MCP servers.
+                  </p>
+                  <a
+                    href="https://developers.openai.com/api/docs/guides/secure-mcp-tunnels"
+                    target="_blank"
+                    rel="noreferrer"
+                    >Tunnel permissions & help ↗</a
+                  >
+                </div>
+                <label for="tunnel-id">Tunnel ID</label
+                ><input
+                  id="tunnel-id"
+                  name="tunnelId"
+                  placeholder="tunnel_…"
+                  spellcheck="false"
+                  autocomplete="off"
+                  maxlength="256"
+                />
+                <label for="tunnel-key"
+                  >Runtime API key
+                  <span id="key-saved" class="saved-label" hidden
+                    >Saved on this computer</span
+                  ></label
+                ><input
+                  id="tunnel-key"
+                  name="tunnelKey"
+                  type="password"
+                  placeholder="Paste your runtime API key"
+                  autocomplete="off"
+                  spellcheck="false"
+                  maxlength="4096"
+                />
+                <p class="field-help" id="key-help">
+                  Your key is saved locally and never returned to this page.
+                </p>
+                <p class="field-help">
+                  <span id="setup-summary"
+                    >We’ll verify the bot, save your settings, and start the tunnel.</span
+                  >
+                </p>
+                <div class="panel-actions">
+                  <button type="button" class="secondary" id="previous-step">← Back</button
+                  ><button type="submit" class="primary" id="connect-button">
+                    Save & connect <span>→</span>
+                  </button>
+                </div>
+              </section>
+            </form>
+            <section id="progress-screen" class="panel" hidden>
+              <div id="progress-symbol" class="progress-symbol" aria-hidden="true">↻</div>
+              <p class="eyebrow">STEP 03 / CONNECTION CHECK</p>
+              <h2 id="progress-title">Connecting the dots.</h2>
+              <p id="progress-message" class="panel-intro" role="status"></p>
+              <div id="qr-panel" class="qr-panel" hidden>
+                <img
+                  id="login-qr"
+                  alt="Scan this login QR code with your phone"
+                  width="280"
+                  height="280"
+                />
+                <div>
+                  <p class="eyebrow">ON YOUR PHONE</p>
+                  <h3 id="qr-title">Scan to sign in</h3>
+                  <p id="qr-instructions"></p>
+                  <p id="qr-expiry" class="field-help" role="status"></p>
+                  <p class="field-help">Only the latest code works. Keep this code private.</p>
+                </div>
+              </div>
+              <form id="password-form" autocomplete="off" hidden>
+                <label for="two-step-password">Telegram two-step password</label
+                ><input
+                  id="two-step-password"
+                  type="password"
+                  autocomplete="off"
+                  maxlength="1024"
+                />
+                <p class="field-help">Used only for this login. It isn’t saved.</p>
+                <button class="primary" id="submit-password" type="submit">
+                  Confirm password →
+                </button>
+              </form>
+              <button class="text-button" id="cancel-login" hidden>Cancel login</button>
+              <p class="field-help">
+                You can refresh this page. We’ll keep track of this operation while the setup center
+                is running.
+              </p>
+              <div id="recovery-actions" class="panel-actions" hidden>
+                <button class="secondary" id="back-to-settings">Back to settings</button
+                ><button class="primary" data-action="start" id="retry-start">
+                  Retry connection
+                </button>
+                <button class="secondary" data-action="stop" id="retry-stop">Stop tunnel</button>
+                <button class="primary" data-action="login" id="retry-login">
+                  Start a new login</button
+                ><button class="text-button" id="copy-doctor">Copy diagnostic command</button>
+              </div>
+            </section>
+            <section id="manage-screen" hidden>
+              <div class="connection-strip">
+                <span id="runtime-dot" class="runtime-dot"></span>
+                <div>
+                  <strong id="runtime-title"></strong>
+                  <p id="runtime-description"></p>
+                </div>
+                <div class="runtime-actions">
+                  <button class="secondary" data-action="start" id="start-button">
+                    Start tunnel</button
+                  ><button class="secondary" data-action="stop" id="stop-button">Stop tunnel</button
+                  ><button class="secondary" data-action="login" id="login-button">
+                    Sign in again</button
+                  ><button class="text-button" id="edit-settings">Edit settings</button>
+                </div>
+              </div>
+              <div id="finish-guide" class="panel">
+                <p class="eyebrow">STEP 04 / USE WITH AI</p>
+                <h2>One last connection.</h2>
+                <p id="finish-intro" class="panel-intro">
+                  Your tunnel is ready. Now add Discord to ChatGPT.
+                </p>
+                <div class="copy-row tunnel-copy">
+                  <div>
+                    <span id="tunnel-label" class="eyebrow">YOUR DISCORD TUNNEL</span
+                    ><code id="saved-tunnel"></code>
+                  </div>
+                  <button class="secondary" id="copy-tunnel">Copy ID</button>
+                </div>
+                <ol class="finish-steps">
+                  <li>
+                    Open
+                    <a href="https://chatgpt.com/plugins" target="_blank" rel="noreferrer"
+                      >ChatGPT Plugins ↗</a
+                    >, then choose <strong>+ → Add custom MCP server</strong>.
+                  </li>
+                  <li>
+                    Choose <strong>Tunnel</strong> and select or paste the ID above. For this
+                    private connection, use <strong>No authentication</strong>.
+                  </li>
+                  <li>Create and install the plugin, then select it in a chat.</li>
+                </ol>
+                <div class="try-prompt">
+                  <span class="eyebrow">TRY YOUR FIRST QUESTION</span>
+                  <p id="first-question">“Show me my Discord servers and their channels.”</p>
+                  <button
+                    class="text-button"
+                    id="copy-question"
+                    data-copy="Show me my Discord servers and their channels."
+                  >
+                    Copy question ↗
+                  </button>
+                </div>
+                <p class="field-help">
+                  Tunnel readiness doesn’t confirm a successful tool call. Try the question above to
+                  check permissions and finish setup.
+                </p>
+                <details class="advanced">
+                  <summary>Can’t find your tunnel?</summary>
+                  <p>
+                    Check the tunnel’s ChatGPT workspace association and Tunnels Read + Use
+                    permissions.
+                    <a
+                      href="https://developers.openai.com/api/docs/guides/secure-mcp-tunnels#troubleshooting"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Open troubleshooting ↗</a
+                    >
+                  </p>
+                </details>
+              </div>
+            </section>
+          </div>
+        </section>
+        <footer>
+          <span class="footer-dot">●</span>Connections keep running when you close this page.<span
+            >Keep your computer awake. After a reboot, start your apps again.</span
+          >
+        </footer>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

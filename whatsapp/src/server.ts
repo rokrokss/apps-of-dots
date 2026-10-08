@@ -14,6 +14,8 @@ import {
   waitFor,
   withAppLock,
   type SourceSpec,
+  loginProcess,
+  type WebLoginOptions,
 } from "@apps-of-dots/managed-mcp";
 
 export const SOURCE: SourceSpec = {
@@ -134,6 +136,34 @@ export async function login(home: string): Promise<void> {
   process.umask(0o077);
   console.log("WhatsApp: Settings > Linked Devices > Link a Device. Scan the QR code below.");
   await serve(home, true);
+}
+export async function webLogin(home: string, options: WebLoginOptions): Promise<void> {
+  await requireInstallation(home, SOURCE);
+  const env = await whatsappEnvironment(home);
+  await requireFreePort(Number(env.WHATSAPP_BRIDGE_PORT));
+  for (const dir of [
+    stateDirectory(home),
+    join(stateDirectory(home), "store"),
+    join(appDirectory(home, "whatsapp"), "files"),
+  ])
+    await privateDirectory(dir);
+  const process = loginProcess({
+    ...options,
+    command: sourcePaths(home, SOURCE).bridge,
+    args: [],
+    cwd: stateDirectory(home),
+    env,
+  });
+  try {
+    await waitFor(() => bridgeHealth(env), process.running, options.signal, 300_000);
+    options.signal.throwIfAborted();
+    await privateWrite(
+      join(stateDirectory(home), "paired.json"),
+      JSON.stringify({ paired: true }) + "\n",
+    );
+  } finally {
+    await process.close();
+  }
 }
 export async function run(home: string): Promise<number> {
   process.umask(0o077);

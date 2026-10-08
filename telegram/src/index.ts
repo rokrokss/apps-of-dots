@@ -9,11 +9,12 @@ import {
   type ManagedIntegration,
   type SetupOptions,
 } from "@apps-of-dots/managed-mcp";
-import { SOURCE, TOOL_COUNT, login, preflight, run, verifyAccount } from "./server.js";
+import { SOURCE, TOOL_COUNT, login, webLogin, preflight, run, verifyAccount } from "./server.js";
 
 interface TelegramSetup extends SetupOptions {
   apiId?: string;
   apiHashFile?: string;
+  apiHash?: string;
 }
 export const telegram: ManagedIntegration = {
   id: "telegram",
@@ -39,10 +40,13 @@ export const telegram: ManagedIntegration = {
       setup.saved.apiHash,
       "Telegram API hash",
       "--api-hash-file",
+      options.apiHash,
     );
     if (!/^[1-9][0-9]*$/.test(apiId) || !/^[a-fA-F0-9]{32}$/.test(apiHash))
       throw new Error("Telegram needs a positive API ID and a 32-character hexadecimal API hash.");
+    options.progress?.("install");
     if (!options.skipInstall) await installSource(home, SOURCE);
+    options.progress?.("save");
     const c = await saveConfig(
       home,
       "telegram",
@@ -60,6 +64,7 @@ export const telegram: ManagedIntegration = {
     };
   },
   login,
+  webLogin,
   preflight,
   run,
   liveCheckHelp: "Check account authentication and tunnel configuration (stop first)",

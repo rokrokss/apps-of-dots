@@ -93,6 +93,14 @@ try {
       maxBuffer: 4 * 1024 * 1024,
     });
     console.log(`${source.app} Python: ${unit.stdout.trim().split("\n").at(-1)}`);
+    if (source.app === "telegram") {
+      const login = await exec(
+        paths.python,
+        ["-m", "unittest", "discover", "-s", "../python", "-p", "test_*.py"],
+        { cwd: paths.project, env, timeout: 30_000 },
+      );
+      console.log(`telegram web login: ${login.stderr.trim().split("\n").at(-1)}`);
+    }
     if (source.bridge) {
       const go = await exec("go", ["test", "-mod=readonly", "./..."], {
         cwd: join(paths.source, source.bridge),

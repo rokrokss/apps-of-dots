@@ -19,6 +19,33 @@
 Discord는 메시지, 채널, 멤버, 역할, 관리, 포럼, 웹훅, 예약 이벤트, 초대, DM 도구를 모두 제공합니다.
 Discord **MCP Events는 구현하지 않습니다**. Discord의 예약 이벤트 관리 도구는 포함됩니다.
 
+## 웹에서 설정하기
+
+의존성 설치와 빌드 후 아래 명령을 실행하면 로컬 설정 화면이 열립니다.
+
+```sh
+pnpm apps-of-dots ui
+```
+
+Discord·Telegram·WhatsApp의 계정·터널 설정부터 상태 확인·시작·중지·ChatGPT에 추가하는 방법까지
+화면에서 안내합니다. Telegram·WhatsApp은 웹에 표시된 QR을 휴대폰으로 스캔하고 승인하면 터널이
+시작됩니다. QR은 자동 갱신되며 로그인 취소와 새로고침 후 이어하기도 가능합니다. Telegram의 2단계
+비밀번호는 필요한 경우에만 입력하며 해당 로그인에만 사용하고 저장하지 않습니다.
+
+기존 CLI 설정을 재사용합니다. 저장된 키를 유지하려면 입력란을 비워 두세요. 설정을 바꾸거나 다시
+로그인하려면 먼저 해당 터널을 중지합니다. 앱마다 별도의 터널 ID를 사용하세요. CLI도 계속 사용할 수
+있으며 KakaoTalk·Recly는 각 프로젝트 가이드로 연결됩니다. 터널 준비 완료가 실제 도구 호출의 성공을
+뜻하지는 않으므로, 마지막 화면의 예시 질문을 ChatGPT에서 실행해 확인하세요.
+
+설정 화면은 `127.0.0.1:3210`에서만 열립니다. 터미널에 출력된 링크에는 관리용 접근 토큰이 있으므로
+공유하지 마세요. 입력한 키는 기존 CLI와 같은 비공개 파일에 저장되며 웹 응답에 다시 포함되지
+않습니다. 설정 작업 중에는 `ui`를 실행한 터미널을 유지하세요. 브라우저를 닫거나 새로고침해도 작업은
+계속됩니다. 웹 서버를 종료하면 진행 중인 계정 로그인은 취소되지만 이미 시작한 MCP 터널은 유지됩니다.
+컴퓨터를 재부팅하면 터널을 다시 시작해야 합니다.
+
+`ui --no-open`은 브라우저를 열지 않고 링크만 출력하고, `ui --port 0`은 빈 포트를 선택합니다.
+`--home /데이터/경로 ui`로 다른 데이터 폴더를 사용할 수 있습니다.
+
 ## 시작하기
 
 Node.js 24 이상, pnpm 10, Discord 봇 토큰, OpenAI 터널 ID와 실행용 키가 필요합니다. Mac에서는 공식
@@ -64,11 +91,11 @@ pnpm apps-of-dots whatsapp start
 pnpm apps-of-dots whatsapp status
 ```
 
-Telegram은 `my.telegram.org`의 API ID/hash가 필요합니다. 각 `login`에서 QR을 스캔하며, Telegram의
-2단계 비밀번호는 필요한 경우에만 입력하고 저장하지 않습니다. 개인 계정 세션은 비공개 데이터 폴더에
-보관합니다. 두 앱 모두 `status`, `stop`, `restart`, `logs`, `doctor`, `tools`, `mcp`를 제공합니다.
-WhatsApp은 Go 브리지와 Python MCP를 함께 시작·종료합니다. 선택적인 음성 전사 서비스/모델과 OpenAI
-MCP Events 전송은 이 구현에서 설정하지 않습니다.
+Telegram은 `my.telegram.org`의 API ID/hash가 필요합니다. 웹 설정 화면이나 CLI `login`에 표시된 QR을
+휴대폰으로 스캔합니다. Telegram의 2단계 비밀번호는 필요한 경우에만 입력하고 저장하지 않습니다. 개인
+계정 세션은 비공개 데이터 폴더에 보관합니다. 두 앱 모두 `status`, `stop`, `restart`, `logs`,
+`doctor`, `tools`, `mcp`를 제공합니다. WhatsApp은 Go 브리지와 Python MCP를 함께 시작·종료합니다.
+선택적인 음성 전사 서비스/모델과 OpenAI MCP Events 전송은 이 구현에서 설정하지 않습니다.
 
 공통 흐름은 `setup → start → status`이며 Telegram·WhatsApp은 setup 다음에 QR `login`을 합니다. 명령
 이름·도움말 순서·설정 완료·시작 대기 안내를 공유합니다. 아래 명령의 `discord`를 다른 앱 이름으로

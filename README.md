@@ -23,6 +23,36 @@ Discord includes messaging, channels, members, roles, moderation, forums, webhoo
 management, invitations, and DMs. It does **not** implement MCP Events. Discord scheduled-event
 tools remain available.
 
+## Local setup center
+
+After installing dependencies and building (`pnpm install --frozen-lockfile && pnpm build`), run:
+
+```sh
+pnpm apps-of-dots ui
+```
+
+The local setup center guides Discord, Telegram, and WhatsApp account and tunnel configuration, live
+status, start/stop controls, and adding the app to ChatGPT. Telegram and WhatsApp show QR codes here
+to scan with your phone, refresh expired codes, and start the tunnel after account approval.
+Telegram may request its two-step password; it is used only for that login and is not saved. You can
+cancel login or return to it after refreshing the page.
+
+Existing CLI settings are reused; leave credential fields blank to keep saved keys. Stop a running
+tunnel before editing its settings or signing in again. Each app needs its own tunnel ID. The CLI
+remains available for terminal setup and automation. KakaoTalk and Recly link to their own guides.
+Tunnel readiness is separate from a successful tool call: try the suggested question in ChatGPT to
+verify account access. The setup center does not record AI tool-call success.
+
+The page is served only on `127.0.0.1:3210`. Keep the printed setup link private: its fragment
+grants access to the management API. Credentials are saved in the same private files as the CLI and
+are never returned by the web API. The setup center must stay running for setup jobs; refreshing or
+closing the browser does not cancel them. Stopping this UI server cancels pending account logins and
+leaves started MCP tunnels running. After a computer reboot, start the tunnels again.
+
+Use `ui --no-open` to print the link without opening a browser, `ui --port 0` to pick a free port,
+or `--home /path/to/data ui` to select an existing data directory. There is no remote/public UI
+mode.
+
 ## Start with Discord
 
 You need Node.js 24+, pnpm 10, a Discord bot token, and an OpenAI tunnel ID with its runtime key.
@@ -70,10 +100,11 @@ pnpm apps-of-dots whatsapp start
 pnpm apps-of-dots whatsapp status
 ```
 
-Telegram setup needs an API ID/hash from `my.telegram.org`. Each `login` displays a QR code in your
-terminal; Telegram may also request its two-step password. Credentials and persistent sessions stay
-in the private data directory. The tools act as your personal account. Follow the
-[Telegram](telegram/README.md) and [WhatsApp](whatsapp/README.md) guides for setup and file access.
+Telegram setup needs an API ID/hash from `my.telegram.org`. The setup center displays the QR code
+locally; the CLI `login` command displays it in the terminal. Telegram may also request its two-step
+password, which is never saved. Credentials and persistent sessions stay in the private data
+directory. The tools act as your personal account. Follow the [Telegram](telegram/README.md) and
+[WhatsApp](whatsapp/README.md) guides for setup and file access.
 
 Both provide `status`, `stop`, `restart`, `logs`, `doctor`, `tools`, and local `mcp` commands.
 WhatsApp supervises its Go bridge and Python MCP together. Optional transcription services/models

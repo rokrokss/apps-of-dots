@@ -9,7 +9,7 @@ import {
   type ManagedIntegration,
   type SetupOptions,
 } from "@apps-of-dots/managed-mcp";
-import { SOURCE, TOOL_COUNT, login, preflight, run, verifyAccount } from "./server.js";
+import { SOURCE, TOOL_COUNT, login, webLogin, preflight, run, verifyAccount } from "./server.js";
 
 interface WhatsAppSetup extends SetupOptions {
   bridgePort?: string;
@@ -28,7 +28,9 @@ export const whatsapp: ManagedIntegration = {
     const bridgePort = options.bridgePort ?? setup.previous?.settings.bridgePort ?? "8766";
     if (!/^\d+$/.test(bridgePort) || Number(bridgePort) < 1024 || Number(bridgePort) > 65535)
       throw new Error("Bridge port must be between 1024 and 65535.");
+    options.progress?.("install");
     if (!options.skipInstall) await installSource(home, SOURCE);
+    options.progress?.("save");
     const c = await saveConfig(
       home,
       "whatsapp",
@@ -50,6 +52,7 @@ export const whatsapp: ManagedIntegration = {
     };
   },
   login,
+  webLogin,
   preflight,
   run,
   liveCheckHelp: "Check account connection and tunnel configuration (start first)",

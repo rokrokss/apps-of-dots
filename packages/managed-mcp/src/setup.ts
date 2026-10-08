@@ -9,12 +9,16 @@ export interface SetupOptions {
   tunnelClient?: string;
   skipInstall?: boolean;
   json?: boolean;
+  // Programmatic input for the local UI; never exposed as command-line flags.
+  tunnelKey?: string;
+  progress?: (stage: "runtime" | "credentials" | "install" | "save") => void;
 }
 function answer(value: string | symbol): string {
   if (prompts.isCancel(value)) throw new Error("Setup cancelled. No configuration was changed.");
   return value as string;
 }
 export async function prepareSetup(home: string, app: string, options: SetupOptions) {
+  options.progress?.("runtime");
   const previous = await loadConfig(home, app);
   const saved = previous
     ? await readSecrets(home, app, previous).catch(() => ({}) as Record<string, string>)
@@ -47,7 +51,9 @@ export async function prepareSetup(home: string, app: string, options: SetupOpti
     existing: string | undefined,
     label: string,
     flag: string,
+    provided?: string,
   ) => {
+    if (provided) return validateSecret(provided, label);
     if (file) return validateSecret(await readFile(file, "utf8"), label);
     if (existing) return existing;
     if (!interactive)
@@ -60,6 +66,7 @@ export async function prepareSetup(home: string, app: string, options: SetupOpti
     "OpenAI tunnel ID",
     "--tunnel-id tunnel_…",
   );
+  options.progress?.("credentials");
   if (!/^tunnel_[a-zA-Z0-9_-]+$/.test(tunnelId))
     throw new Error(
       "Invalid tunnel ID. Obtain one from https://platform.openai.com/settings/organization/tunnels",
@@ -69,6 +76,7 @@ export async function prepareSetup(home: string, app: string, options: SetupOpti
     saved.tunnel,
     "OpenAI tunnel runtime key",
     "--tunnel-key-file",
+    options.tunnelKey,
   );
   return { previous, saved, interactive, value, credential, tunnelId, tunnelClient, tunnel };
 }

@@ -17,6 +17,7 @@ import { loadConfig, requireConfig, readSecrets } from "./config.js";
 import { setup, verifyBot, type SetupOptions } from "./setup.js";
 import { inspectTools, runServer, TOOL_COUNT, SERVER_VERSION } from "./server.js";
 import { runtime } from "./runtime.js";
+import { controlDiscord } from "./service.js";
 
 function printStatus(status: RuntimeStatus, json: boolean): void {
   print(
@@ -113,9 +114,7 @@ export function registerDiscord(program: Command, home: () => string): void {
     .option("--json", jsonHelp.status)
     .action(async (options: { json?: boolean }) => {
       const directory = home();
-      const config = await requireConfig(directory);
-      await readSecrets(directory, config);
-      const status = await (await runtime(directory, config)).start();
+      const status = await controlDiscord(directory, "start");
       printStatus(status, Boolean(options.json));
       if (!status.processRunning || !status.healthy) process.exitCode = 1;
       printStartupHint("discord", status, options.json);
@@ -128,11 +127,7 @@ export function registerDiscord(program: Command, home: () => string): void {
       .option("--json", jsonHelp.status)
       .action(async (options: { json?: boolean }) => {
         const directory = home();
-        const config = await requireConfig(directory);
-        if (action === "restart") await readSecrets(directory, config);
-        const runner = await runtime(directory, config);
-        const stopped = await runner.stop();
-        const status = action === "restart" ? await runner.start() : stopped;
+        const status = await controlDiscord(directory, action);
         printStatus(status, Boolean(options.json));
         if (action === "restart") printStartupHint("discord", status, options.json);
         if (action === "restart" && (!status.processRunning || !status.healthy))

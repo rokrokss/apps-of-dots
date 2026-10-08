@@ -12,6 +12,8 @@ import {
   ProcessScope,
   withAppLock,
   type SourceSpec,
+  loginProcess,
+  type WebLoginOptions,
 } from "@apps-of-dots/managed-mcp";
 
 export const SOURCE: SourceSpec = {
@@ -81,6 +83,25 @@ export async function login(home: string): Promise<void> {
     console.log("Telegram session saved. Run apps-of-dots telegram start.");
   } finally {
     await scope.close();
+  }
+}
+export async function webLogin(home: string, options: WebLoginOptions): Promise<void> {
+  await requireInstallation(home, SOURCE);
+  await prepareDirectories(home);
+  const process = loginProcess({
+    ...options,
+    command: sourcePaths(home, SOURCE).python,
+    args: [loginScript, "--web"],
+    cwd: appDirectory(home, "telegram"),
+    env: await telegramEnvironment(home),
+  });
+  try {
+    const code = await process.running.done;
+    options.signal.throwIfAborted();
+    if (code !== 0) throw new Error("Telegram login did not complete.");
+    await preflight(home);
+  } finally {
+    await process.close();
   }
 }
 export async function verifyAccount(home: string): Promise<string> {

@@ -26,6 +26,7 @@ import { withAppLock } from "./process.js";
 import { inspectCatalog } from "./catalog.js";
 import { showLogs } from "./logs.js";
 import type { SetupOptions } from "./setup.js";
+import type { WebLoginOptions } from "./login.js";
 
 export interface ManagedIntegration {
   id: string;
@@ -36,6 +37,7 @@ export interface ManagedIntegration {
   setupOptions(command: Command): void;
   setup(home: string, options: SetupOptions): Promise<SetupResult>;
   login(home: string): Promise<void>;
+  webLogin?(home: string, options: WebLoginOptions): Promise<void>;
   preflight(home: string): Promise<void>;
   run(home: string): Promise<number>;
   liveCheck?(home: string): Promise<string>;

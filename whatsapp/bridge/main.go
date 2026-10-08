@@ -2842,9 +2842,12 @@ const (
 // every later scan is validated against a secret the server has already
 // dropped and the phone reports "check your connection" while pairing never
 // completes.
-func renderPairingQRCodes(qrChan <-chan whatsmeow.QRChannelItem, w io.Writer, renderQR func(code string, w io.Writer)) pairingQROutcome {
+func renderPairingQRCodes(qrChan <-chan whatsmeow.QRChannelItem, w io.Writer, renderQR func(code string, w io.Writer), observers ...func(whatsmeow.QRChannelItem)) pairingQROutcome {
 	codes := 0
 	for evt := range qrChan {
+		for _, observe := range observers {
+			observe(evt)
+		}
 		switch evt.Event {
 		case "code":
 			codes++
@@ -2867,6 +2870,10 @@ func renderPairingQRCodes(qrChan <-chan whatsmeow.QRChannelItem, w io.Writer, re
 
 func main() {
 	flag.Parse()
+	loginEvents := webLoginEvents()
+	if loginEvents != nil {
+		defer loginEvents.Close()
+	}
 
 	// Set up logger with DEBUG level for more detailed logging
 	logger := waLog.Stdout("Client", "DEBUG", true)
@@ -3186,9 +3193,15 @@ func main() {
 			}
 
 			// Print QR codes for pairing with the phone.
-			switch renderPairingQRCodes(qrChan, os.Stdout, func(code string, w io.Writer) {
-				qrterminal.GenerateHalfBlock(code, qrterminal.L, w)
-			}) {
+			var qrOutput io.Writer = os.Stdout
+			if loginEvents != nil {
+				qrOutput = io.Discard
+			}
+			switch renderPairingQRCodes(qrChan, qrOutput, func(code string, w io.Writer) {
+				if loginEvents == nil {
+					qrterminal.GenerateHalfBlock(code, qrterminal.L, w)
+				}
+			}, func(evt whatsmeow.QRChannelItem) { writeWebLoginEvent(loginEvents, evt) }) {
 			case pairingQRSucceeded:
 				connected <- true
 			case pairingQRTimedOut:

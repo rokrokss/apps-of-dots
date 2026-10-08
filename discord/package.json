@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@apps-of-dots/managed-mcp": "workspace:*",
     "@apps-of-dots/runtime": "workspace:*",
     "@clack/prompts": "1.8.1",
     "@modelcontextprotocol/sdk": "1.32.1",
