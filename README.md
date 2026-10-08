@@ -23,9 +23,61 @@ Discord includes messaging, channels, members, roles, moderation, forums, webhoo
 management, invitations, and DMs. It does **not** implement MCP Events. Discord scheduled-event
 tools remain available.
 
+## Installation
+
+```sh
+git clone https://github.com/rokrokss/apps-of-dots.git
+cd apps-of-dots
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+| Requirement                                                                    | Used by                                     |
+| ------------------------------------------------------------------------------ | ------------------------------------------- |
+| Node.js 24+ and pnpm 10                                                        | Everything                                  |
+| [tunnel-client](https://github.com/openai/tunnel-client#install-with-homebrew) | Every tunnel                                |
+| [uv](https://docs.astral.sh/uv/)                                               | Telegram and WhatsApp (fetches Python 3.12) |
+| Go 1.26+ and a C compiler                                                      | WhatsApp bridge                             |
+
+<details>
+<summary><strong>macOS: install every requirement with Homebrew</strong></summary>
+
+```sh
+xcode-select --install
+brew install node pnpm uv go openai/tools/tunnel-client
+```
+
+`xcode-select` provides the C compiler.
+
+</details>
+
+<details>
+<summary><strong>Standalone <code>apps-of-dots</code> command</strong></summary>
+
+Run `pnpm link --global` after building. Its global bin directory must be on your PATH; keep this
+checkout in place. There is no published npm release yet.
+
+</details>
+
+<details>
+<summary><strong>Laptops and multiple machines</strong></summary>
+
+- Set up each machine separately and sign in to Telegram and WhatsApp there with a QR code. Do not
+  copy the private data directory (`~/Library/Application Support/apps-of-dots` on macOS): it holds
+  absolute paths and locally built binaries, and a Telegram session used from two machines at once
+  fails with a duplicate-session error.
+- Run one active client per tunnel ID. Give each machine its own tunnel IDs, or stop the old one
+  first.
+- Stopping a tunnel does not revoke an account session. Remove machines you no longer use from the
+  Telegram and WhatsApp device lists.
+- A sleeping laptop disconnects its tunnels. `caffeinate -i` prevents idle sleep while it runs; it
+  does not prevent sleep when the lid is closed.
+
+</details>
+
 ## Local setup center
 
-After installing dependencies and building (`pnpm install --frozen-lockfile && pnpm build`), run:
+After [installation](#installation), run:
 
 ```sh
 pnpm apps-of-dots ui
@@ -55,16 +107,9 @@ mode.
 
 ## Start with Discord
 
-You need Node.js 24+, pnpm 10, a Discord bot token, and an OpenAI tunnel ID with its runtime key.
-Install the official [tunnel-client](https://github.com/openai/tunnel-client#install-with-homebrew)
-first; on macOS, `brew install openai/tools/tunnel-client`.
+You need a Discord bot token and an OpenAI tunnel ID with its runtime key.
 
 ```sh
-git clone https://github.com/rokrokss/apps-of-dots.git
-cd apps-of-dots
-pnpm install --frozen-lockfile
-pnpm build
-
 pnpm apps-of-dots discord setup
 pnpm apps-of-dots discord start
 pnpm apps-of-dots discord status
@@ -84,9 +129,8 @@ Try: “List my Discord servers and the channels in this server.”
 
 All three MCP implementations live in this repository: `discord/server`, `telegram/server`, and
 `whatsapp/server` + `whatsapp/bridge`. No external MCP package or checkout is needed at runtime.
-Telegram/WhatsApp setup installs locked libraries using `uv`; WhatsApp also needs Go 1.26+ and a C
-compiler to build the local bridge. Python 3.12 is downloaded by `uv` when needed. Use a separate
-tunnel ID for each app.
+Telegram/WhatsApp setup installs locked libraries using `uv` and builds the local WhatsApp bridge
+(see [requirements](#installation)). Use a separate tunnel ID for each app.
 
 ```sh
 pnpm apps-of-dots telegram setup
@@ -109,9 +153,6 @@ directory. The tools act as your personal account. Follow the [Telegram](telegra
 Both provide `status`, `stop`, `restart`, `logs`, `doctor`, `tools`, and local `mcp` commands.
 WhatsApp supervises its Go bridge and Python MCP together. Optional transcription services/models
 are not provisioned, and neither integration adds OpenAI MCP Events delivery.
-
-For the standalone `apps-of-dots` command, run `pnpm link --global` after building. Its global bin
-directory must be on your PATH; keep this checkout in place. There is no published npm release yet.
 
 ## Everyday commands
 
@@ -145,28 +186,6 @@ service. The host must remain online.
 Setup, status, tools, and diagnostics offer `--json`. Use `--home <path>` or `APPS_OF_DOTS_HOME` for
 an isolated installation. KakaoTalk and Recly remain external projects; this CLI does not change
 their installations.
-
-## Another computer
-
-Each computer needs its own installation. On a new Mac, install the prerequisites, then clone,
-build, and set up as above; `pnpm apps-of-dots ui` is the quickest path. `xcode-select` provides the
-C compiler for the WhatsApp bridge.
-
-```sh
-xcode-select --install
-brew install node pnpm uv go openai/tools/tunnel-client
-```
-
-- Do not copy the private data directory (`~/Library/Application Support/apps-of-dots` on macOS).
-  Its runtime contains absolute paths and binaries built for the original computer, and a Telegram
-  session used from two computers at once fails with a duplicate-session error. Sign in to Telegram
-  and WhatsApp again with a QR code instead.
-- Run one active client per tunnel ID. Stop the tunnel on the old computer first, or create a
-  separate tunnel ID for each computer.
-- When you retire the old computer, remove its session from the Telegram and WhatsApp device lists.
-  Stopping a tunnel does not revoke it.
-- A sleeping laptop disconnects its tunnels. `caffeinate -i` prevents idle sleep while it runs; it
-  does not prevent sleep when the lid is closed.
 
 ## Project status
 

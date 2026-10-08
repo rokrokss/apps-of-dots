@@ -19,9 +19,61 @@
 Discord는 메시지, 채널, 멤버, 역할, 관리, 포럼, 웹훅, 예약 이벤트, 초대, DM 도구를 모두 제공합니다.
 Discord **MCP Events는 구현하지 않습니다**. Discord의 예약 이벤트 관리 도구는 포함됩니다.
 
+## 설치
+
+```sh
+git clone https://github.com/rokrokss/apps-of-dots.git
+cd apps-of-dots
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+| 필요 항목                                                                      | 용도                                      |
+| ------------------------------------------------------------------------------ | ----------------------------------------- |
+| Node.js 24 이상, pnpm 10                                                       | 전체                                      |
+| [tunnel-client](https://github.com/openai/tunnel-client#install-with-homebrew) | 모든 터널                                 |
+| [uv](https://docs.astral.sh/uv/)                                               | Telegram·WhatsApp (Python 3.12 자동 준비) |
+| Go 1.26 이상, C 컴파일러                                                       | WhatsApp 브리지                           |
+
+<details>
+<summary><strong>macOS: Homebrew로 한 번에 설치</strong></summary>
+
+```sh
+xcode-select --install
+brew install node pnpm uv go openai/tools/tunnel-client
+```
+
+`xcode-select`가 C 컴파일러를 설치합니다.
+
+</details>
+
+<details>
+<summary><strong><code>apps-of-dots</code> 명령으로 실행하기</strong></summary>
+
+빌드 후 `pnpm link --global`을 사용하면 `apps-of-dots discord setup`처럼 실행할 수 있습니다. pnpm의
+전역 실행 경로가 PATH에 있어야 하고, 이 체크아웃을 유지해야 합니다. 아직 npm에 게시된 패키지는
+없습니다.
+
+</details>
+
+<details>
+<summary><strong>노트북과 여러 컴퓨터</strong></summary>
+
+- 컴퓨터마다 따로 설정하고 Telegram·WhatsApp은 해당 컴퓨터에서 QR로 로그인하세요. 비공개 데이터
+  폴더(macOS는 `~/Library/Application Support/apps-of-dots`)를 복사하지 마세요. 절대 경로와 로컬에서
+  빌드한 바이너리가 들어 있고, Telegram 세션을 두 컴퓨터에서 동시에 쓰면 중복 세션 오류가 납니다.
+- 터널 ID 하나에는 클라이언트를 하나만 실행합니다. 컴퓨터마다 별도의 터널 ID를 쓰거나 기존 터널을
+  먼저 중지하세요.
+- 터널을 중지해도 계정 세션은 해제되지 않습니다. 더 이상 쓰지 않는 컴퓨터는 Telegram·WhatsApp 기기
+  목록에서 해제하세요.
+- 노트북이 잠자기에 들어가면 터널 연결이 끊깁니다. `caffeinate -i`는 실행 중에 유휴 잠자기를 막지만,
+  덮개를 닫았을 때의 잠자기는 막지 못합니다.
+
+</details>
+
 ## 웹에서 설정하기
 
-의존성 설치와 빌드 후 아래 명령을 실행하면 로컬 설정 화면이 열립니다.
+[설치](#설치) 후 아래 명령을 실행하면 로컬 설정 화면이 열립니다.
 
 ```sh
 pnpm apps-of-dots ui
@@ -46,17 +98,11 @@ Discord·Telegram·WhatsApp의 계정·터널 설정부터 상태 확인·시작
 `ui --no-open`은 브라우저를 열지 않고 링크만 출력하고, `ui --port 0`은 빈 포트를 선택합니다.
 `--home /데이터/경로 ui`로 다른 데이터 폴더를 사용할 수 있습니다.
 
-## 시작하기
+## Discord로 시작하기
 
-Node.js 24 이상, pnpm 10, Discord 봇 토큰, OpenAI 터널 ID와 실행용 키가 필요합니다. Mac에서는 공식
-터널 클라이언트를 먼저 설치합니다.
+Discord 봇 토큰, OpenAI 터널 ID와 실행용 키가 필요합니다.
 
 ```sh
-brew install openai/tools/tunnel-client
-git clone https://github.com/rokrokss/apps-of-dots.git
-cd apps-of-dots
-pnpm install --frozen-lockfile
-pnpm build
 pnpm apps-of-dots discord setup
 pnpm apps-of-dots discord start
 pnpm apps-of-dots discord status
@@ -75,9 +121,8 @@ pnpm apps-of-dots discord status
 
 Discord·Telegram·WhatsApp MCP 구현은 모두 이 레포의 `discord/server`, `telegram/server`,
 `whatsapp/server`와 `whatsapp/bridge`에 포함되어 있습니다. 외부 MCP 패키지나 저장소를 받아 실행하지
-않습니다. Telegram과 WhatsApp의 `setup`은 `uv`로 잠긴 라이브러리 의존성을 설치하며, 필요한 Python
-3.12도 준비합니다. WhatsApp은 로컬 브리지 빌드에 Go 1.26 이상과 C 컴파일러가 필요합니다. 앱별로
-별도의 터널 ID를 사용하세요.
+않습니다. Telegram과 WhatsApp의 `setup`은 `uv`로 잠긴 라이브러리 의존성을 설치하고 로컬 WhatsApp
+브리지를 빌드합니다([필요 항목](#설치) 참고). 앱별로 별도의 터널 ID를 사용하세요.
 
 ```sh
 pnpm apps-of-dots telegram setup
@@ -123,32 +168,7 @@ pnpm apps-of-dots discord stop
 `start`를 다시 실행해야 합니다**. 컴퓨터가 꺼지거나 잠들면 연결도 유지되지 않습니다. 중지해도 설정과
 키는 보존됩니다.
 
-빌드 후 `pnpm link --global`을 사용하면 `apps-of-dots discord setup`처럼 실행할 수 있습니다. pnpm의
-전역 실행 경로가 PATH에 있어야 하고, 이 체크아웃을 유지해야 합니다. 아직 npm에 게시된 패키지는
-없습니다.
-
 현재는 첫 구현이며 macOS에서 CLI와 실제 도구 스키마를 검사했습니다. `pnpm test:servers`는 계정
 로그인 없이 레포 내부 Python·Go 코드를 빌드하고 원본 도구 스키마와 비교합니다. 실제 계정 인증·OpenAI
 터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Linux용 CI 설정은 포함되어 있고, Windows와 부팅
 자동 실행은 후속 범위입니다.
-
-## 다른 컴퓨터에서 사용하기
-
-컴퓨터마다 따로 설치해야 합니다. 새 Mac에서는 아래 준비물을 설치한 뒤 위와 같이
-클론·빌드·설정합니다. `pnpm apps-of-dots ui`를 쓰는 것이 가장 간단합니다. `xcode-select`는 WhatsApp
-브리지 빌드에 필요한 C 컴파일러를 설치합니다.
-
-```sh
-xcode-select --install
-brew install node pnpm uv go openai/tools/tunnel-client
-```
-
-- 비공개 데이터 폴더(macOS는 `~/Library/Application Support/apps-of-dots`)를 복사하지 마세요.
-  런타임에 원래 컴퓨터 기준의 절대 경로와 빌드 결과가 들어 있고, Telegram 세션을 두 컴퓨터에서
-  동시에 쓰면 중복 세션 오류가 납니다. Telegram·WhatsApp은 새 컴퓨터에서 QR로 다시 로그인하세요.
-- 터널 ID 하나에는 클라이언트를 하나만 실행합니다. 기존 컴퓨터의 터널을 먼저 중지하거나, 컴퓨터마다
-  별도의 터널 ID를 사용하세요.
-- 기존 컴퓨터를 더 이상 쓰지 않으면 Telegram·WhatsApp의 기기 목록에서 그 세션을 해제하세요. 터널을
-  중지해도 세션은 해제되지 않습니다.
-- 노트북이 잠자기에 들어가면 터널 연결이 끊깁니다. `caffeinate -i`는 실행 중에 유휴 잠자기를 막지만,
-  덮개를 닫았을 때의 잠자기는 막지 못합니다.
