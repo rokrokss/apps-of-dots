@@ -1,0 +1,35 @@
+{
+  "name": "apps-of-dots",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted MCP integrations for OpenAI dots",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "bin": {
+    "apps-of-dots": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "pnpm -r build && tsc -p tsconfig.json",
+    "apps-of-dots": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "pnpm build && node --import tsx --test test/*.test.ts discord/test/*.test.ts packages/runtime/test/*.test.ts",
+    "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
+    "format": "prettier --write .",
+    "check": "prettier --check . && pnpm typecheck"
+  },
+  "dependencies": {
+    "@apps-of-dots/discord": "workspace:*",
+    "@apps-of-dots/runtime": "workspace:*",
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

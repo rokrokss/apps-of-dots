@@ -1,0 +1,7 @@
+packages:
+  - discord
+  - packages/*
+
+minimumReleaseAge: 1440
+onlyBuiltDependencies:
+  - esbuild

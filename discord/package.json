@@ -1,0 +1,21 @@
+{
+  "name": "@apps-of-dots/discord",
+  "version": "0.1.0",
+  "private": true,
+  "description": "All Discord MCP tools over OpenAI Secure MCP Tunnel",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@apps-of-dots/runtime": "workspace:*",
+    "@clack/prompts": "1.8.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@pasympa/discord-mcp": "2.2.0",
+    "commander": "15.0.0"
+  }
+}
