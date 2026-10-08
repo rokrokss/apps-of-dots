@@ -24,7 +24,8 @@ appendFileSync(
     inheritedCommand: process.env.MCP_COMMAND,
   }) + "\n",
 );
-const path = join(root, "fixture-status.json");
+const alias = args[1] === "connect" ? args[args.indexOf("--alias") + 1] : args[2];
+const path = join(root, `fixture-${alias}.json`);
 const saved = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
 const option = (name) => args[args.indexOf(name) + 1];
 let result;
@@ -34,7 +35,7 @@ else if (args[1] === "connect") {
     console.error(process.env.FIXTURE_CONNECT_ERROR);
     process.exit(1);
   }
-  const logPath = join(root, "runtime.log");
+  const logPath = join(root, alias === "apps-of-dots-discord" ? "runtime.log" : `${alias}.log`);
   if (!existsSync(logPath)) writeFileSync(logPath, "Fixture runtime started\n");
   result = {
     runtime_state: "ready",

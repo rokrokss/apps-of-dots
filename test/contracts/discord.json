@@ -1,0 +1,3321 @@
+{
+  "repository": "PaSympa/discord-mcp",
+  "commit": "5d13fea701d567f1c67a4f21f75844db1f1acda4",
+  "tools": [
+    {
+      "name": "discord_add_reaction",
+      "description": "Add a single emoji reaction to a message as the bot. Requires the Add Reactions and Read Message History permissions. Use discord_remove_reactions to undo. Idempotent: re-adding the bot's existing reaction has no effect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to react to."
+          },
+          "emoji": {
+            "type": "string",
+            "description": "Unicode emoji (e.g. '👍') or a custom emoji in 'name:id' format."
+          }
+        },
+        "required": ["channel_id", "message_id", "emoji"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_add_role",
+      "description": "Assign an existing role to a member. Requires the Manage Roles permission, and the role must be below the bot's highest role. Idempotent: assigning a role the member already has has no effect. Use discord_remove_role to undo.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member to give the role to."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to assign."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_audit_permissions",
+      "description": "Generate a server-wide permission report: for every channel that has overwrites, lists each role/member and their allowed/denied permissions (entity names resolved). Read-only. Returns { channels: [...] } with channel, channelId, overwrites. Use discord_get_channel_permissions for a single channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_ban_member",
+      "description": "Ban a user from the server, blocking re-entry until unbanned. Optionally bulk-deletes their recent messages. Requires the Ban Members permission, and the bot's top role must outrank the target's. Use discord_unban_member to reverse, or discord_kick_member for a non-permanent removal. The reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the user to ban."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          },
+          "delete_message_days": {
+            "default": 0,
+            "description": "Also delete the user's messages from the last N days (0–7). Default 0 (delete nothing).",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        },
+        "required": ["guild_id", "user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_bulk_ban",
+      "description": "Ban many users in a single call, intended for raid mitigation. SAFE BY DEFAULT: dry_run is true unless explicitly set to false, so call it first to preview the exact list of user IDs that would be banned, then re-call with dry_run:false to actually ban them. Requires both the Ban Members and Manage Server permissions. Returns counts of banned vs failed users; Discord rejects the whole call with an error if no user could be banned. Use discord_ban_member for a single ban with finer control.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_ids": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "description": "Array of user IDs (snowflakes) to ban (max 200 per call, a Discord API limit)."
+          },
+          "delete_message_seconds": {
+            "default": 0,
+            "description": "Also delete each user's messages from the last N seconds (0–604800, i.e. up to 7 days). Default 0.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 604800
+          },
+          "dry_run": {
+            "default": true,
+            "description": "If true (default), only returns the user IDs that would be banned without banning anyone. Set false to actually ban.",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_ids"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_bulk_delete_messages",
+      "description": "Permanently delete multiple recent messages in one call. IRREVERSIBLE. SAFE BY DEFAULT: dry_run is true unless explicitly set to false, so call it first to preview, then re-call with dry_run:false to actually delete. Discord only allows bulk-deleting messages younger than 14 days; older ones are skipped. Requires the Manage Messages permission. Returns the number deleted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread to delete messages from."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 100,
+            "description": "Number of recent messages to delete (2–100)."
+          },
+          "dry_run": {
+            "default": true,
+            "description": "If true (default), only reports how many would be deleted without deleting. Set false to actually delete.",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id", "count"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_clone_channel",
+      "description": "Create a copy of a channel, including its name, topic, and permission overwrites (but not its messages). Requires the Manage Channels permission. Returns the cloned channel's name and ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to clone."
+          },
+          "new_name": {
+            "description": "Optional name for the clone. Defaults to the source channel's name.",
+            "type": "string"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_copy_permissions",
+      "description": "Replace the target channel's permission overwrites with a copy of the source channel's. The target's existing overwrites are overwritten. Requires the Manage Roles permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to copy overwrites from."
+          },
+          "target_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel whose overwrites will be replaced."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["source_channel_id", "target_channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_channel",
+      "description": "Create a text channel, voice channel, or category in a server. Requires the Manage Channels permission. For forum channels use discord_create_forum_channel instead. Returns the new channel's name and ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake) to create the channel in."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the new channel (max 100 characters)."
+          },
+          "type": {
+            "description": "Channel type to create. Defaults to 'text'.",
+            "type": "string",
+            "enum": ["text", "voice", "category"]
+          },
+          "topic": {
+            "description": "Optional channel topic/description. Applies to text channels only.",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Optional category (snowflake) to nest the new channel under.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["guild_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_event_invite",
+      "description": "Create a shareable invite URL that points to a scheduled event, so recipients land on the event when joining. Requires the Create Instant Invite permission. Returns the invite URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the scheduled event to link the invite to."
+          },
+          "channel_id": {
+            "description": "Channel (snowflake) the invite points to. Defaults to the event's own channel; REQUIRED for EXTERNAL events, which have none.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "max_age": {
+            "default": 86400,
+            "description": "Invite lifetime in seconds, 0–604800 (7 days); 0 means it never expires. Default 86400 (24h).",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 604800
+          },
+          "max_uses": {
+            "default": 0,
+            "description": "Maximum number of uses, 0–100; 0 means unlimited. Default 0.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": ["guild_id", "event_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_forum_channel",
+      "description": "Create a new forum channel in a server. A forum holds posts (threads) rather than a linear message feed. Requires the Manage Channels permission. Use discord_create_channel for text/voice channels instead. Returns the new channel's name and ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the new forum channel (max 100 characters)."
+          },
+          "topic": {
+            "description": "Guidelines/topic text shown at the top of the forum.",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Optional category (snowflake) to nest the forum under.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["guild_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_forum_post",
+      "description": "Create a new post (a thread with a starter message) in a forum channel. Requires the Send Messages and Create Public Threads permissions. Use discord_reply_to_forum to add follow-up messages. Returns the new post's name and thread ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "forum_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum channel to post in."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the post, used as the thread name (max 100 characters)."
+          },
+          "content": {
+            "type": "string",
+            "description": "Body of the post's starter message (max 2000 characters)."
+          },
+          "applied_tags": {
+            "description": "Optional tag IDs to apply. Get valid IDs from discord_get_forum_tags.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["forum_channel_id", "title", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_invite",
+      "description": "Create an invite link for a channel, optionally limiting its lifetime, uses, and membership type. SECURITY: anyone with the returned link can join the server. Requires the Create Instant Invite permission. Returns the invite URL and code.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel the invite leads to."
+          },
+          "max_age": {
+            "default": 86400,
+            "description": "Invite lifetime in seconds, 0–604800 (7 days); 0 means it never expires. Default 86400 (24h).",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 604800
+          },
+          "max_uses": {
+            "default": 0,
+            "description": "Maximum number of uses, 0–100; 0 means unlimited. Default 0.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "unique": {
+            "description": "If true, always mint a fresh invite instead of reusing an equivalent existing one. Default false.",
+            "type": "boolean"
+          },
+          "temporary": {
+            "description": "If true, members who join via this invite are removed when they disconnect (unless they get a role). Default false.",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_role",
+      "description": "Create a new role in a server. Requires the Manage Roles permission; the new role is placed below the bot's highest role. Use discord_add_role to then assign it to members. Returns the new role's name and ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the new role (max 100 characters)."
+          },
+          "color": {
+            "description": "Role color as a hex string, e.g. '#FF5733'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "hoist": {
+            "description": "If true, display members with this role separately in the member list.",
+            "type": "boolean"
+          },
+          "mentionable": {
+            "description": "If true, anyone can @mention this role.",
+            "type": "boolean"
+          },
+          "permissions": {
+            "description": "Server-wide permission flag names to grant, e.g. ['SendMessages','ViewChannel']. Uses Discord PermissionsBitField flag names.",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["guild_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_scheduled_event",
+      "description": "Create a scheduled event. For 'VOICE'/'STAGE_INSTANCE' events provide channel_id; for 'EXTERNAL' events provide location AND scheduled_end_time. Requires the Manage Events permission. Returns the new event's name and ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Event name (max 100 characters)."
+          },
+          "description": {
+            "description": "Optional event description (max 1000 characters).",
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": ["VOICE", "STAGE_INSTANCE", "EXTERNAL"],
+            "description": "Where the event happens: 'VOICE' or 'STAGE_INSTANCE' (needs channel_id), or 'EXTERNAL' (needs location + scheduled_end_time)."
+          },
+          "scheduled_start_time": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "description": "Event start as an ISO 8601 datetime, e.g. '2026-06-01T20:00:00Z'. Must be in the future."
+          },
+          "scheduled_end_time": {
+            "description": "Event end as an ISO 8601 datetime. Required for EXTERNAL events.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "channel_id": {
+            "description": "Voice or stage channel ID (snowflake). Required for VOICE/STAGE_INSTANCE events.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "location": {
+            "description": "Free-text location (e.g. a URL or place). Required for EXTERNAL events.",
+            "type": "string"
+          },
+          "image": {
+            "description": "Optional cover image URL.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          }
+        },
+        "required": ["guild_id", "name", "entity_type", "scheduled_start_time"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_thread",
+      "description": "Create a thread, either branching from an existing message (pass message_id) or as a standalone thread in a text channel (omit message_id). Standalone creation requires a parent text channel and fails if channel_id is itself a thread. Requires the Create Public Threads permission. Returns the new thread's ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the parent text channel. For a message-based thread, the channel containing message_id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the thread to create (max 100 characters)."
+          },
+          "message_id": {
+            "description": "Optional. Message to branch the thread from. If omitted, a standalone thread is created in the channel.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "auto_archive_duration": {
+            "default": 1440,
+            "description": "Minutes of inactivity before auto-archiving: 60, 1440, 4320, or 10080. Default 1440 (24h).",
+            "type": "number",
+            "enum": [60, 1440, 4320, 10080]
+          }
+        },
+        "required": ["channel_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_create_webhook",
+      "description": "Create a webhook on a channel and return its ID and token. SECURITY: the returned token grants anyone the ability to post as this webhook without authentication; treat it as a secret. Requires the Manage Webhooks permission. Use the returned id+token with discord_send_webhook_message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to attach the webhook to."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the webhook (max 80 characters)."
+          },
+          "avatar": {
+            "description": "Optional avatar image URL for the webhook.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          }
+        },
+        "required": ["channel_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_crosspost_message",
+      "description": "Publish (crosspost) a message from an Announcement channel to every server that follows it. Only works in announcement channels on a message that has not already been published. Requires the Send Messages permission (and Manage Messages for messages authored by others). Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the announcement channel containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to publish to followers."
+          }
+        },
+        "required": ["channel_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_channel",
+      "description": "Permanently delete a channel and all of its messages. IRREVERSIBLE. SAFE BY DEFAULT: dry_run is true unless explicitly set to false, so call it first to preview, then re-call with dry_run:false to actually delete. Requires the Manage Channels permission. An optional reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to delete."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          },
+          "dry_run": {
+            "default": true,
+            "description": "If true (default), only reports which channel would be deleted without deleting it. Set false to actually delete.",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_dm",
+      "description": "Permanently delete a DM message previously sent by this bot. IRREVERSIBLE. The bot can only delete its own DM messages, not the recipient's. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the target message within the DM conversation."
+          }
+        },
+        "required": ["user_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_forum_post",
+      "description": "Permanently delete a forum post (thread) and all its messages. IRREVERSIBLE. To merely close it without deleting, use discord_update_forum_post with archived:true. Requires the Manage Threads permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum post (thread) to delete."
+          }
+        },
+        "required": ["thread_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_invite",
+      "description": "Revoke an invite by its code so it can no longer be used. IRREVERSIBLE (the code is freed). Requires the Manage Channels permission (or Manage Server). The reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "description": "The invite code to revoke. A full discord.gg/<code> URL is also accepted."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["invite_code"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_message",
+      "description": "Permanently delete one specific message. IRREVERSIBLE. The bot can always delete its own messages; deleting another user's message requires the Manage Messages permission. Use discord_bulk_delete_messages to remove many at once. An optional reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to delete."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["channel_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_role",
+      "description": "Permanently delete a role from the server; it is automatically removed from every member who held it. IRREVERSIBLE. Requires the Manage Roles permission, and the role must be below the bot's highest role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to delete."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_scheduled_event",
+      "description": "Permanently delete a scheduled event. IRREVERSIBLE. To cancel an event while keeping a record, use discord_edit_scheduled_event with status:'CANCELED' instead. Requires the Manage Events permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the event to delete."
+          }
+        },
+        "required": ["guild_id", "event_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_webhook",
+      "description": "Permanently delete a webhook by its ID, invalidating its token. IRREVERSIBLE: any integrations using the old token will stop working. Requires the Manage Webhooks permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook to delete."
+          }
+        },
+        "required": ["webhook_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_delete_webhook_message",
+      "description": "Permanently delete a message that was sent through a webhook, using the webhook's ID and token. IRREVERSIBLE. Requires the original webhook token.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook that sent the message."
+          },
+          "webhook_token": {
+            "type": "string",
+            "description": "Secret token of the webhook."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the webhook message to delete."
+          }
+        },
+        "required": ["webhook_id", "webhook_token", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_channel",
+      "description": "Update a channel's name, topic, slowmode, or NSFW flag. Only provided fields change; topic and slowmode apply to text channels only. Requires the Manage Channels permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to edit."
+          },
+          "name": {
+            "description": "New channel name (max 100 characters).",
+            "type": "string"
+          },
+          "topic": {
+            "description": "New topic/description (text channels only).",
+            "type": "string"
+          },
+          "slowmode": {
+            "description": "Per-user message cooldown in seconds, 0–21600. 0 disables slowmode.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600
+          },
+          "nsfw": {
+            "description": "Mark (true) or unmark (false) the channel as age-restricted (NSFW).",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_dm",
+      "description": "Edit the text content of a DM message previously sent by this bot. Only the bot's own DM messages can be edited. Use discord_edit_dm_embed for embed messages. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the target message within the DM conversation."
+          },
+          "content": {
+            "type": "string",
+            "description": "New plain-text content that fully replaces the existing message (max 2000 characters)."
+          }
+        },
+        "required": ["user_id", "message_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_dm_embed",
+      "description": "Replace the embed on a DM message previously sent by this bot. Only the bot's own messages can be edited. Full replace, not merge: provided fields are applied and omitted fields are dropped. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the target message within the DM conversation."
+          },
+          "content": {
+            "description": "Optional new plain text shown above the embed.",
+            "type": "string"
+          },
+          "title": {
+            "description": "Embed title shown in bold at the top.",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL that makes the title clickable.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "description": {
+            "description": "Main body text of the embed (supports Markdown).",
+            "type": "string"
+          },
+          "color": {
+            "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "fields": {
+            "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Field heading."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Field body text."
+                },
+                "inline": {
+                  "description": "If true, render this field side-by-side with adjacent inline fields.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["name", "value"],
+              "additionalProperties": false
+            }
+          },
+          "author": {
+            "description": "Author block shown at the top of the embed.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Author display name."
+              },
+              "icon_url": {
+                "description": "Small icon shown next to the author name.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "url": {
+                "description": "URL the author name links to.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+          },
+          "thumbnail_url": {
+            "description": "Small image shown in the top-right corner.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "footer": {
+            "description": "Footer text shown at the bottom of the embed.",
+            "type": "string"
+          },
+          "image_url": {
+            "description": "Large image shown below the embed body.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "timestamp": {
+            "description": "If true, stamp the embed with the current time.",
+            "type": "boolean"
+          }
+        },
+        "required": ["user_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_embed",
+      "description": "Replace the embed on a message previously sent by this bot. Only this bot's messages can be edited. This is a full replace, not a merge: provided fields are applied and omitted fields are dropped from the embed. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to edit. Must be a message authored by this bot (an embed is added if it has none)."
+          },
+          "title": {
+            "description": "Embed title shown in bold at the top.",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL that makes the title clickable.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "description": {
+            "description": "Main body text of the embed (supports Markdown).",
+            "type": "string"
+          },
+          "color": {
+            "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "fields": {
+            "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Field heading."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Field body text."
+                },
+                "inline": {
+                  "description": "If true, render this field side-by-side with adjacent inline fields.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["name", "value"],
+              "additionalProperties": false
+            }
+          },
+          "author": {
+            "description": "Author block shown at the top of the embed.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Author display name."
+              },
+              "icon_url": {
+                "description": "Small icon shown next to the author name.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "url": {
+                "description": "URL the author name links to.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+          },
+          "thumbnail_url": {
+            "description": "Small image shown in the top-right corner.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "footer": {
+            "description": "Footer text shown at the bottom of the embed.",
+            "type": "string"
+          },
+          "image_url": {
+            "description": "Large image shown below the embed body.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "timestamp": {
+            "description": "If true, stamp the embed with the current time.",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_message",
+      "description": "Edit the text content of a message previously sent by this bot. Discord forbids editing other users' messages, so this fails for non-bot messages. Use discord_edit_embed for embed messages. Works in text channels and threads. Returns the edited message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to edit. Must be a message authored by this bot."
+          },
+          "content": {
+            "type": "string",
+            "description": "New plain-text content that fully replaces the existing content (max 2000 characters)."
+          }
+        },
+        "required": ["channel_id", "message_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_role",
+      "description": "Update an existing role's name, color, permissions, hoist, or mentionable flag. Only provided fields change; passing permissions REPLACES the role's full permission set. Requires the Manage Roles permission, and the role must be below the bot's highest role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to edit."
+          },
+          "name": {
+            "description": "New role name (max 100 characters).",
+            "type": "string"
+          },
+          "color": {
+            "description": "New role color as a hex string, e.g. '#FF5733'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "hoist": {
+            "description": "If true, display members with this role separately in the member list.",
+            "type": "boolean"
+          },
+          "mentionable": {
+            "description": "If true, anyone can @mention this role.",
+            "type": "boolean"
+          },
+          "permissions": {
+            "description": "Permission flag names. Providing this REPLACES the role's entire permission set. Uses Discord PermissionsBitField flag names.",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["guild_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_scheduled_event",
+      "description": "Update a scheduled event; only provided fields change. Use the status field to start ('ACTIVE'), end ('COMPLETED'), or cancel ('CANCELED') an event; Discord only allows certain status transitions. Requires the Manage Events permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the event to edit."
+          },
+          "name": {
+            "description": "New event name (max 100 characters).",
+            "type": "string"
+          },
+          "description": {
+            "description": "New event description (max 1000 characters).",
+            "type": "string"
+          },
+          "scheduled_start_time": {
+            "description": "New start time as an ISO 8601 datetime.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "scheduled_end_time": {
+            "description": "New end time as an ISO 8601 datetime.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "channel_id": {
+            "description": "New voice/stage channel ID (snowflake) for VOICE/STAGE_INSTANCE events.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "location": {
+            "description": "New free-text location for EXTERNAL events.",
+            "type": "string"
+          },
+          "image": {
+            "description": "New cover image URL.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "status": {
+            "description": "Change event status. Allowed transitions only: SCHEDULED→ACTIVE→COMPLETED, or SCHEDULED→CANCELED (no transition back to SCHEDULED exists).",
+            "type": "string",
+            "enum": ["ACTIVE", "COMPLETED", "CANCELED"]
+          }
+        },
+        "required": ["guild_id", "event_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_webhook",
+      "description": "Update a webhook's name, avatar, or the channel it posts to. Only provided fields change. Requires the Manage Webhooks permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook to edit."
+          },
+          "name": {
+            "description": "New display name for the webhook (max 80 characters).",
+            "type": "string"
+          },
+          "avatar": {
+            "description": "New avatar image URL for the webhook.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "channel_id": {
+            "description": "ID (snowflake) of a channel to move the webhook to.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["webhook_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_edit_webhook_message",
+      "description": "Edit a message previously sent through a webhook, using the webhook's ID and token. Replaces the provided fields. Requires the original webhook token. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook that sent the message."
+          },
+          "webhook_token": {
+            "type": "string",
+            "description": "Secret token of the webhook."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the webhook message to edit."
+          },
+          "content": {
+            "description": "New plain-text content for the message (max 2000 characters).",
+            "type": "string"
+          },
+          "embeds": {
+            "description": "Up to 10 embed objects to attach to the webhook message.",
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "description": "Embed title shown in bold at the top.",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "URL that makes the title clickable.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "description": {
+                  "description": "Main body text of the embed (supports Markdown).",
+                  "type": "string"
+                },
+                "color": {
+                  "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+                  "type": "string",
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "fields": {
+                  "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Field heading."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Field body text."
+                      },
+                      "inline": {
+                        "description": "If true, render this field side-by-side with adjacent inline fields.",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["name", "value"],
+                    "additionalProperties": false
+                  }
+                },
+                "author": {
+                  "description": "Author block shown at the top of the embed.",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Author display name."
+                    },
+                    "icon_url": {
+                      "description": "Small icon shown next to the author name.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    },
+                    "url": {
+                      "description": "URL the author name links to.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                },
+                "thumbnail_url": {
+                  "description": "Small image shown in the top-right corner.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "footer": {
+                  "description": "Footer text shown at the bottom of the embed.",
+                  "type": "string"
+                },
+                "image_url": {
+                  "description": "Large image shown below the embed body.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "timestamp": {
+                  "description": "If true, stamp the embed with the current time.",
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["webhook_id", "webhook_token", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_fetch_pinned_messages",
+      "description": "List all pinned messages in a channel. Returns { messages: [...] } with id, author, content, timestamp, pinnedAt. Read-only. Use discord_pin_message to change which messages are pinned.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread to list pins from."
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_fetch_webhook_message",
+      "description": "Fetch a single message sent through a webhook (id, content, embed count, timestamp), using the webhook's ID and token. Read-only. Requires the original webhook token.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook that sent the message."
+          },
+          "webhook_token": {
+            "type": "string",
+            "description": "Secret token of the webhook."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the webhook message to fetch."
+          }
+        },
+        "required": ["webhook_id", "webhook_token", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_find_channel_by_name",
+      "description": "Find channels whose name contains a substring (case-insensitive). Returns matching channels (id, name, type) as a JSON array. Read-only. Useful for resolving a channel_id when you only know the channel's name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Case-insensitive substring to match against channel names."
+          }
+        },
+        "required": ["guild_id", "name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_follow_announcement_channel",
+      "description": "Subscribe a target channel to an announcement (news) channel, so the source's published messages are reposted into the target. The source must be an announcement channel. Requires the Manage Webhooks permission in the target. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the announcement channel to follow."
+          },
+          "target_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel that will receive published messages."
+          }
+        },
+        "required": ["source_channel_id", "target_channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_forward_message",
+      "description": "Forward an existing message to another channel using Discord's native forward, which preserves the original attribution. Works across text channels and threads. Use discord_send_message to compose new content instead. Requires the Send Messages permission in the target channel. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the source message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to forward."
+          },
+          "target_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the destination channel or thread."
+          }
+        },
+        "required": ["channel_id", "message_id", "target_channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_audit_log",
+      "description": "Fetch the server's audit log, the record of administrative actions (bans, kicks, role/channel changes, etc.) with who performed them and when. Requires the View Audit Log permission. Returns { entries: [...] } with id, action, executor, target, reason, createdAt. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "limit": {
+            "default": 25,
+            "description": "How many recent entries to fetch (1–100). Default 25.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "action_type": {
+            "description": "Optional Discord AuditLogEvent numeric ID to filter by (e.g. 22 = MemberBanAdd). Accepts event IDs newer than the bundled enum. Omit for all action types.",
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 40, 41,
+                  42, 50, 51, 52, 60, 61, 62, 72, 73, 74, 75, 80, 81, 82, 83, 84, 85, 90, 91, 92,
+                  100, 101, 102, 110, 111, 112, 121, 130, 131, 132, 140, 141, 142, 143, 144, 145,
+                  146, 150, 151, 163, 164, 165, 166, 167, 190, 191, 192, 193
+                ]
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            ]
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_channel_permissions",
+      "description": "List every permission overwrite on a channel, per role and per member, with the allowed and denied permission flags for each. Read-only. Use discord_audit_permissions for a server-wide report across all channels.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to inspect."
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_event_subscribers",
+      "description": "List the users who marked themselves 'Interested' in a scheduled event. Returns { subscribers: [...], nextCursor }. A page holds up to 100 users; if nextCursor is non-null, pass it back as `after` to fetch the next page. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the scheduled event."
+          },
+          "limit": {
+            "default": 25,
+            "description": "Max subscribers per page (1–100). Default 25.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "after": {
+            "description": "Pagination cursor: a user ID (snowflake). Pass the previous response's nextCursor to fetch the next page.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["guild_id", "event_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_forum_channels",
+      "description": "List the forum channels in a server (id, name, topic, parent category). Read-only. Use discord_get_forum_tags to see a forum's available tags, or discord_list_forum_threads for its posts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_forum_post",
+      "description": "Get a forum post's details (title, archived/locked state, applied tags, message count) plus its recent messages, oldest-to-newest. Read-only. Pass the post's thread_id. Returns a JSON object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum post (thread)."
+          },
+          "limit": {
+            "default": 20,
+            "description": "How many recent messages to include (1–100). Default 20.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["thread_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_forum_tags",
+      "description": "List the tags available on a forum channel (id, name, emoji, moderated flag). Read-only. Use these IDs with discord_create_forum_post or discord_update_forum_post; manage the tag set with discord_set_forum_tags.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "forum_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum channel to read tags from."
+          }
+        },
+        "required": ["forum_channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_guild_info",
+      "description": "Get details about one server: name, description, member/channel/role counts, boost tier, owner, and creation date. Read-only. Use discord_get_server_stats for a finer breakdown (humans vs bots, channel types).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_invite",
+      "description": "Look up a single invite by its code: target server and channel, inviter, and expiry. Works for any public invite, but this endpoint never returns usage counters (uses/max_uses/max_age read 0); use discord_list_invites or discord_list_channel_invites for real counters. Read-only. Returns a JSON object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "description": "The invite code, e.g. 'abc123'. A full discord.gg/abc123 URL is also accepted and stripped."
+          }
+        },
+        "required": ["invite_code"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_member_info",
+      "description": "Get full details for one server member: roles, effective permissions, account/join dates, bot flag, and current timeout status. Read-only. Returns a JSON object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member."
+          }
+        },
+        "required": ["guild_id", "user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_membership_screening",
+      "description": "Fetch the server's membership screening form, the rules/questions new members must accept before gaining access. Requires the server to have the Community feature enabled. Read-only. Returns the form as JSON, including its version.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_message_attachments",
+      "description": "List the file attachments of a message. Returns { attachments: [...] } with id, filename, title (the original name when Discord strips non-ASCII from filename), url, proxyUrl, contentType, size in bytes, width, height, alt-text description, voice-message duration and waveform, spoiler flag. Discord signs CDN urls with a 24-hour expiry and does not re-sign on every fetch; re-call this tool if a stored url has expired. Requires the View Channel and Read Message History permissions. Read-only. Use discord_read_messages to find messages with attachments.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message whose attachments to list."
+          }
+        },
+        "required": ["channel_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_reactions",
+      "description": "List the users who reacted to a message with a specific emoji. Returns { reactions: [...] } with id, username, bot flag. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to inspect."
+          },
+          "emoji": {
+            "type": "string",
+            "description": "Unicode emoji or custom emoji 'name:id' to list reactors for."
+          },
+          "limit": {
+            "default": 25,
+            "description": "Max users to return (1–100). Default 25.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["channel_id", "message_id", "emoji"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_role_members",
+      "description": "List members who currently hold a specific role, scanning up to 20,000 members. Returns { members: [...], truncated }; check `truncated` on very large servers. Read-only. Use discord_list_roles to discover role IDs first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to list holders of."
+          }
+        },
+        "required": ["guild_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_scheduled_event",
+      "description": "Get full details for one scheduled event: name, description, status, type, channel/location, start/end times, creator, and interested-user count. Read-only. Returns a JSON object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the scheduled event."
+          }
+        },
+        "required": ["guild_id", "event_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_get_server_stats",
+      "description": "Get a snapshot of server metrics: total members (humans vs cached bots), channel breakdown (text/voice/category), role count, boost tier and count, and creation date. Read-only. Returns a JSON object. Note: bots are counted from the member cache only, so botsInCache is a lower bound and humans (total minus cached bots) an upper bound.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_kick_member",
+      "description": "Remove a member from the server. They can rejoin with a new invite (unlike a ban). Requires the Kick Members permission, and the bot's top role must be higher than the target's. Use discord_ban_member to block re-entry. The reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member to kick."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_bans",
+      "description": "List the users banned from the server, with their ban reasons. Returns { bans: [...], nextCursor }. A page holds up to 1000 bans; if nextCursor is non-null, pass it back as `after` to fetch the next page. Requires the Ban Members permission. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "limit": {
+            "default": 1000,
+            "description": "Max bans per page (1–1000). Default 1000.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "after": {
+            "description": "Pagination cursor: a user ID (snowflake). Pass the previous response's nextCursor to fetch the next page.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_channel_invites",
+      "description": "List the active invites that point to one specific channel. Unlike discord_list_invites (server-wide), this scopes results to a single channel. Requires the Manage Channels permission. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to list invites for."
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_channels",
+      "description": "List all channels in a server, grouped by their parent category and ordered by position. Returns a JSON object keyed by category name. Read-only. Use discord_find_channel_by_name to locate a specific channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_forum_threads",
+      "description": "List posts in a forum channel. Returns { threads: [...], hasMore, nextBefore }. The first call (no `before`) includes all active posts plus the first page of archived posts; archived posts are paginated, so if hasMore is true pass nextBefore back as `before` to fetch older archived posts. Read-only. Use discord_get_forum_post to read one post's messages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "forum_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum channel to list posts from."
+          },
+          "limit": {
+            "default": 100,
+            "description": "Max archived posts per page (1–100). Default 100.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "before": {
+            "description": "Pagination cursor: an ISO timestamp. Pass the previous response's nextBefore to fetch older archived posts. When set, active posts are omitted.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": ["forum_channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_guilds",
+      "description": "List every Discord server (guild) the bot is a member of (id, name, member count, icon). Takes no arguments. Read-only. Start here to discover the guild_id needed by most other tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_invites",
+      "description": "List all active invites across a server (code, url, channel, inviter, uses, expiry). Requires the Manage Server permission. Read-only. Use discord_list_channel_invites to scope to one channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_members",
+      "description": "List members of a server with their roles, ordered by user ID. Returns { members: [...], nextCursor }. A page holds up to 1000 members; if nextCursor is non-null, pass it back as `after` to fetch the next page. Use discord_search_members to find specific members by name, or discord_get_member_info for one member's full details. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "limit": {
+            "default": 50,
+            "description": "How many members per page (1–1000). Default 50.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "after": {
+            "description": "Pagination cursor: a user ID (snowflake). Pass the previous response's nextCursor to fetch the next page.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_roles",
+      "description": "List all roles in a server (excluding @everyone), highest-first, with color, position, member count, and permissions. Read-only. Returns { roles: [...] }. Use discord_get_role_members to see who holds a given role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_scheduled_events",
+      "description": "List all scheduled events in a server (id, name, status, type, time, location, interested count). Read-only. Use discord_get_scheduled_event for one event's full details.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_list_webhooks",
+      "description": "List the webhooks in a single channel or across a whole server (id, name, channel, token when visible, creator). Provide exactly one of channel_id or guild_id. Requires the Manage Webhooks permission. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "description": "ID (snowflake) of a channel to list webhooks for. Mutually exclusive with guild_id.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "guild_id": {
+            "description": "Discord server (guild) ID (snowflake) to list all webhooks for. Mutually exclusive with channel_id.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_lock_channel_permissions",
+      "description": "Reset a channel's permission overwrites to exactly match its parent category (Discord's 'sync permissions'). The channel must be inside a category. Requires the Manage Roles permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to sync with its parent category."
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_move_channel",
+      "description": "Move a channel into a category, or remove it from its category when category_id is omitted. Requires the Manage Channels permission. Use discord_set_channel_position to reorder within a category. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to move."
+          },
+          "category_id": {
+            "description": "Target category (snowflake). Omit to move the channel out of any category.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_pin_message",
+      "description": "Pin or unpin a message in a channel, controlled by the pin flag. Requires the Pin Messages permission (a dedicated permission since early 2026, separate from Manage Messages). A channel holds at most 50 pins. Idempotent: pinning an already-pinned message (or unpinning an unpinned one) has no additional effect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to pin or unpin."
+          },
+          "pin": {
+            "type": "boolean",
+            "description": "true to pin the message, false to unpin it."
+          }
+        },
+        "required": ["channel_id", "message_id", "pin"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_prune_members",
+      "description": "Remove members who have been inactive (no roles, not seen) for a number of days. SAFE BY DEFAULT: dry_run is true unless explicitly set to false, so call it first to preview the count, then re-call with dry_run:false to actually remove them. Removal is irreversible (members must rejoin). Requires the Kick Members permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "Inactivity threshold in days (1–30)."
+          },
+          "roles": {
+            "description": "Optional role IDs (snowflakes) to include; by default only members with no roles are counted.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            }
+          },
+          "dry_run": {
+            "default": true,
+            "description": "If true (default), only returns the count that would be pruned without removing anyone. Set false to actually prune.",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "days"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_read_dms",
+      "description": "Read the most recent messages from the bot's DM conversation with a user, oldest-to-newest. Returns { messages: [...] } with id, author, content, embed count, timestamp. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "limit": {
+            "default": 20,
+            "description": "How many recent messages to fetch (1–100). Default 20.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_read_messages",
+      "description": "Read messages from a text channel or thread, oldest-to-newest. Page backwards by re-calling with before set to the id of the oldest message you received, which walks a channel past the 100-message per-call cap. Requires the View Channel and Read Message History permissions. Returns { messages: [...] } with id, author, content, timestamp, attachment count, pinned flag. Use discord_search_messages to filter by keyword, or discord_fetch_pinned_messages for pinned messages only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread to read from."
+          },
+          "limit": {
+            "default": 20,
+            "description": "How many messages to fetch per call (1–100). Default 20.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "before": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Return only messages older than this message ID (snowflake). Page backwards through history by passing the id of the oldest message from the previous call."
+          },
+          "after": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Return only messages newer than this message ID (snowflake). Page forwards by passing the id of the newest message from the previous call."
+          },
+          "around": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Return messages centered on this message ID (snowflake): Discord splits `limit` either side of it, and an even `limit` puts the extra message on the newer side. Use it to read outward from a known message, such as a discord_search_guild_messages hit."
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            ],
+            "description": "Return only messages posted after this instant, as an ISO 8601 date or a date-time with an explicit offset (e.g. \"2026-08-01\" or \"2026-08-01T09:00:00Z\"). Convenience form of `after`: the call yields the oldest `limit` messages after that instant, so page forwards with `after` set to the newest id received."
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_remove_reactions",
+      "description": "Remove reactions from a message. With no emoji: removes ALL reactions. With emoji only: removes every reaction of that emoji. With emoji and user_id: removes that one user's reaction. Removing all reactions or another user's reaction requires the Manage Messages permission. Use discord_add_reaction to add.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to remove reactions from."
+          },
+          "emoji": {
+            "description": "Unicode emoji or custom emoji 'name:id'. Omit to remove ALL reactions on the message.",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "Remove only this user's reaction for the given emoji. Requires emoji to be set.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          }
+        },
+        "required": ["channel_id", "message_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_remove_role",
+      "description": "Remove a role from a member. Requires the Manage Roles permission, and the role must be below the bot's highest role. Idempotent: removing a role the member doesn't have has no effect. Reverses discord_add_role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member to remove the role from."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to remove."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_reply_dm",
+      "description": "Reply to a specific message in a DM, attaching a quoted reply reference. Unlike the edit/delete DM tools, this works on any message in the conversation (the bot's or the user's). Use discord_send_dm for a standalone DM with no reference. Returns the new reply's message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the target message within the DM conversation."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body of the reply (max 2000 characters)."
+          }
+        },
+        "required": ["user_id", "message_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_reply_message",
+      "description": "Reply to a specific message, attaching a reply reference so clients show it as a threaded reply. Use discord_send_message for a standalone message with no reference. Requires the Send Messages permission. Returns the new reply's message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread containing the message."
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID of the message to reply to."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body of the reply (max 2000 characters)."
+          }
+        },
+        "required": ["channel_id", "message_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_reply_to_forum",
+      "description": "Post a follow-up message inside an existing forum post (thread). Requires the Send Messages in Threads permission (shown as 'Send Messages in Posts' for forums). Use discord_create_forum_post to start a new post instead. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum post (thread) to reply in."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body of the reply (max 2000 characters)."
+          }
+        },
+        "required": ["thread_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_reset_channel_permissions",
+      "description": "Remove ALL permission overwrites on a channel, so only role/server-level permissions apply. Does NOT re-sync with the category; use discord_lock_channel_permissions for that. IRREVERSIBLE: the cleared overwrites cannot be recovered. Requires the Manage Roles permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel whose overwrites will be cleared."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_search_guild_messages",
+      "description": "Search for messages across all channels in a guild using Discord's native search API. Returns messages matching the query with channel context. Requires READ_MESSAGE_HISTORY permission. Use discord_search_messages for channel-specific search.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "query": {
+            "type": "string",
+            "description": "Search query (case-insensitive)."
+          },
+          "channel_id": {
+            "description": "Optional. Restrict search to this channel ID.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "author_id": {
+            "description": "Optional. Only show messages from this user ID.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "limit": {
+            "default": 25,
+            "description": "Max messages to return (1–25). Default 25.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 25
+          }
+        },
+        "required": ["guild_id", "query"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_search_members",
+      "description": "Find server members whose username or nickname starts with a query string (prefix match). Returns { members: [...] } with id, username, nickname, roles. Use discord_list_members to page through everyone. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "query": {
+            "type": "string",
+            "description": "Prefix to match against usernames and nicknames."
+          },
+          "limit": {
+            "default": 25,
+            "description": "Max members to return (1–100). Default 25.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["guild_id", "query"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_search_messages",
+      "description": "Keyword search over a channel's recent messages using case-insensitive substring matching. Scans only up to the last 100 messages; it does not search full history. Returns { matches: [...] } with id, author, content, timestamp. Use discord_read_messages to fetch recent messages without filtering.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel or thread to search."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Case-insensitive substring to match within message content."
+          },
+          "limit": {
+            "default": 100,
+            "description": "Max number of recent messages to scan (1–100). Default 100.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["channel_id", "keyword"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_dm",
+      "description": "Send a private direct message to a user by their user ID. Use discord_send_message to post in a server channel instead. Requires the bot to share at least one server with the user, and the user must allow DMs from server members (otherwise Discord rejects the send). Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body of the DM (max 2000 characters)."
+          }
+        },
+        "required": ["user_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_dm_embed",
+      "description": "Send a rich embed as a private direct message to a user. Use discord_send_dm for plain text, or discord_send_embed to post an embed in a channel. Requires the bot to share a server with the user, and the user must allow DMs from server members. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the DM recipient."
+          },
+          "content": {
+            "description": "Optional plain text shown above the embed.",
+            "type": "string"
+          },
+          "title": {
+            "description": "Embed title shown in bold at the top.",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL that makes the title clickable.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "description": {
+            "description": "Main body text of the embed (supports Markdown).",
+            "type": "string"
+          },
+          "color": {
+            "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "fields": {
+            "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Field heading."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Field body text."
+                },
+                "inline": {
+                  "description": "If true, render this field side-by-side with adjacent inline fields.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["name", "value"],
+              "additionalProperties": false
+            }
+          },
+          "author": {
+            "description": "Author block shown at the top of the embed.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Author display name."
+              },
+              "icon_url": {
+                "description": "Small icon shown next to the author name.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "url": {
+                "description": "URL the author name links to.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+          },
+          "thumbnail_url": {
+            "description": "Small image shown in the top-right corner.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "footer": {
+            "description": "Footer text shown at the bottom of the embed.",
+            "type": "string"
+          },
+          "image_url": {
+            "description": "Large image shown below the embed body.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "timestamp": {
+            "description": "If true, stamp the embed with the current time.",
+            "type": "boolean"
+          }
+        },
+        "required": ["user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_embed",
+      "description": "Send a single rich embed (title, description, color, fields, author, footer, images, timestamp). Use discord_send_message for plain text, or discord_send_multiple_embeds to send several embeds at once. Requires the Send Messages and Embed Links permissions. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the target channel or thread."
+          },
+          "title": {
+            "description": "Embed title shown in bold at the top.",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL that makes the title clickable.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "description": {
+            "description": "Main body text of the embed (supports Markdown).",
+            "type": "string"
+          },
+          "color": {
+            "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "fields": {
+            "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Field heading."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Field body text."
+                },
+                "inline": {
+                  "description": "If true, render this field side-by-side with adjacent inline fields.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["name", "value"],
+              "additionalProperties": false
+            }
+          },
+          "author": {
+            "description": "Author block shown at the top of the embed.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Author display name."
+              },
+              "icon_url": {
+                "description": "Small icon shown next to the author name.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              "url": {
+                "description": "URL the author name links to.",
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https?://"
+              }
+            },
+            "required": ["name"],
+            "additionalProperties": false
+          },
+          "thumbnail_url": {
+            "description": "Small image shown in the top-right corner.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "footer": {
+            "description": "Footer text shown at the bottom of the embed.",
+            "type": "string"
+          },
+          "image_url": {
+            "description": "Large image shown below the embed body.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "timestamp": {
+            "description": "If true, stamp the embed with the current time.",
+            "type": "boolean"
+          }
+        },
+        "required": ["channel_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_message",
+      "description": "Send a plain-text message to a channel or thread. For rich content (title, color, fields, images) use discord_send_embed; to attach a reply reference to an existing message use discord_reply_message. Requires the bot to have the Send Messages permission. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the target channel or thread."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body of the message (max 2000 characters)."
+          }
+        },
+        "required": ["channel_id", "content"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_multiple_embeds",
+      "description": "Send up to 10 embeds in a single message, with optional text above them. Use discord_send_embed for a single embed. Requires the Send Messages and Embed Links permissions. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the target channel or thread."
+          },
+          "content": {
+            "description": "Optional plain text shown above the embeds.",
+            "type": "string"
+          },
+          "embeds": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "description": "Embed title shown in bold at the top.",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "URL that makes the title clickable.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "description": {
+                  "description": "Main body text of the embed (supports Markdown).",
+                  "type": "string"
+                },
+                "color": {
+                  "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+                  "type": "string",
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "fields": {
+                  "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Field heading."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Field body text."
+                      },
+                      "inline": {
+                        "description": "If true, render this field side-by-side with adjacent inline fields.",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["name", "value"],
+                    "additionalProperties": false
+                  }
+                },
+                "author": {
+                  "description": "Author block shown at the top of the embed.",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Author display name."
+                    },
+                    "icon_url": {
+                      "description": "Small icon shown next to the author name.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    },
+                    "url": {
+                      "description": "URL the author name links to.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                },
+                "thumbnail_url": {
+                  "description": "Small image shown in the top-right corner.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "footer": {
+                  "description": "Footer text shown at the bottom of the embed.",
+                  "type": "string"
+                },
+                "image_url": {
+                  "description": "Large image shown below the embed body.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "timestamp": {
+                  "description": "If true, stamp the embed with the current time.",
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "Array of embed objects to send (max 10)."
+          }
+        },
+        "required": ["channel_id", "embeds"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_send_webhook_message",
+      "description": "Send a message through a webhook using its ID and token (no bot permissions needed; the token authorizes the send). Supports per-message username/avatar overrides and up to 10 embeds. At least one of content or embeds is required. Returns the new message ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the webhook to send through."
+          },
+          "webhook_token": {
+            "type": "string",
+            "description": "Secret token of the webhook (from discord_create_webhook or discord_list_webhooks)."
+          },
+          "content": {
+            "description": "Plain-text body of the message (max 2000 characters). Optional if embeds are provided.",
+            "type": "string"
+          },
+          "username": {
+            "description": "Override the webhook's default display name for this message.",
+            "type": "string"
+          },
+          "avatar_url": {
+            "description": "Override the webhook's default avatar for this message.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "embeds": {
+            "description": "Up to 10 embed objects to attach to the webhook message.",
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "description": "Embed title shown in bold at the top.",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "URL that makes the title clickable.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "description": {
+                  "description": "Main body text of the embed (supports Markdown).",
+                  "type": "string"
+                },
+                "color": {
+                  "description": "Side-bar color as a hex string, e.g. '#5865F2'.",
+                  "type": "string",
+                  "pattern": "^#[0-9A-Fa-f]{6}$"
+                },
+                "fields": {
+                  "description": "Up to 25 name/value field blocks. Set inline:true on a field to render it side-by-side with adjacent inline fields (up to 3 per row).",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Field heading."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Field body text."
+                      },
+                      "inline": {
+                        "description": "If true, render this field side-by-side with adjacent inline fields.",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["name", "value"],
+                    "additionalProperties": false
+                  }
+                },
+                "author": {
+                  "description": "Author block shown at the top of the embed.",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Author display name."
+                    },
+                    "icon_url": {
+                      "description": "Small icon shown next to the author name.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    },
+                    "url": {
+                      "description": "URL the author name links to.",
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                },
+                "thumbnail_url": {
+                  "description": "Small image shown in the top-right corner.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "footer": {
+                  "description": "Footer text shown at the bottom of the embed.",
+                  "type": "string"
+                },
+                "image_url": {
+                  "description": "Large image shown below the embed body.",
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "timestamp": {
+                  "description": "If true, stamp the embed with the current time.",
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["webhook_id", "webhook_token"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_channel_position",
+      "description": "Set a channel's display order within its category. Use discord_move_channel to change which category it belongs to. Requires the Manage Channels permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to reposition."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Zero-based position within the category (0 = top)."
+          }
+        },
+        "required": ["channel_id", "position"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_forum_tags",
+      "description": "Replace the full set of available tags on a forum channel with the provided list. This overwrites existing tags, so include every tag you want to keep. Requires the Manage Channels permission. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "forum_channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum channel to set tags on."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Tag label (max 20 characters)."
+                },
+                "emoji_name": {
+                  "description": "Optional unicode emoji shown on the tag.",
+                  "type": "string"
+                },
+                "moderated": {
+                  "description": "If true, only members with Manage Threads can apply this tag. Default false.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["name"],
+              "additionalProperties": false
+            },
+            "description": "Complete list of tags to set (replaces all existing tags)."
+          }
+        },
+        "required": ["forum_channel_id", "tags"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_member_permission",
+      "description": "Add or update a per-channel permission overwrite for a single member, allowing and/or denying specific permissions. Merges with the member's existing overwrite. Requires the Manage Roles permission. Use discord_set_role_permission to target a whole role instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to set the overwrite on."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the member to grant/deny permissions for."
+          },
+          "allow": {
+            "description": "Permission flag names to allow, e.g. ['ViewChannel'] (or the same array JSON-encoded as a string). Uses Discord PermissionsBitField flag names.",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deny": {
+            "description": "Permission flag names to deny (array, or JSON-encoded array string).",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["channel_id", "user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_nickname",
+      "description": "Set or clear a member's server nickname. Pass null (or the string 'null') to clear it. Requires the Manage Nicknames permission (or Change Nickname for the bot itself). The reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member."
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New nickname (max 32 characters), or null to clear it."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id", "nickname"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_role_icon",
+      "description": "Set or clear a role's icon, either a custom image or a unicode emoji. Requires the server to be Boost Level 2+ (the ROLE_ICONS feature) and the Manage Roles permission. Pass null to either field to remove that icon. Returns a confirmation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to set the icon on."
+          },
+          "icon": {
+            "description": "Image URL for the role icon, or null to remove it.",
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "string",
+                    "const": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unicode_emoji": {
+            "description": "Unicode emoji to use as the role icon, or null to remove it.",
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["guild_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_role_permission",
+      "description": "Add or update a per-channel permission overwrite for a role, allowing and/or denying specific permissions. Merges with the role's existing overwrite (does not reset it). Denying View Channel to @everyone also locks the bot out unless it holds an allow overwrite of its own; grant that with discord_set_member_permission before the deny. Requires the Manage Roles permission. Use discord_set_member_permission to target a single member instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the channel to set the overwrite on."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to grant/deny permissions for."
+          },
+          "allow": {
+            "description": "Permission flag names to allow, e.g. ['SendMessages','ViewChannel'] (or the same array JSON-encoded as a string). Uses Discord PermissionsBitField flag names.",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deny": {
+            "description": "Permission flag names to deny, e.g. ['SendMessages'] (or the same array JSON-encoded as a string).",
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["channel_id", "role_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_set_role_position",
+      "description": "Move a role up or down in the server's role hierarchy, which determines permission precedence and member-list ordering. Higher position = higher in the list. Requires the Manage Roles permission, and the target position must be below the bot's highest role.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "role_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the role to reposition."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "New hierarchy position (1 = lowest, just above @everyone, which sits at 0). Higher numbers rank higher."
+          }
+        },
+        "required": ["guild_id", "role_id", "position"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_timeout_member",
+      "description": "Mute a member for a set duration (Discord 'timeout'): they cannot send messages, react, or speak until it expires. Pass duration_minutes = 0 to remove an active timeout early. Max 28 days (40320 minutes). Requires the Moderate Members permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the member to time out."
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 40320,
+            "description": "Timeout length in minutes (0–40320, i.e. up to 28 days). Use 0 to clear an existing timeout."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id", "duration_minutes"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_unban_member",
+      "description": "Lift a ban so the user may rejoin via a new invite. Requires the Ban Members permission. Reverses discord_ban_member. The reason is recorded in the audit log.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "user_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord user ID (snowflake) of the banned user to unban."
+          },
+          "reason": {
+            "description": "Optional reason recorded in the server audit log.",
+            "type": "string"
+          }
+        },
+        "required": ["guild_id", "user_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_update_forum_post",
+      "description": "Update a forum post's title, archived/locked state, or applied tags. Only provided fields change; passing applied_tags replaces the post's tags. Set archived:true to close a post without deleting it. Requires the Manage Threads permission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "ID (snowflake) of the forum post (thread) to update."
+          },
+          "title": {
+            "description": "New title/thread name (max 100 characters).",
+            "type": "string"
+          },
+          "archived": {
+            "description": "true to archive (close) the post, false to reopen it.",
+            "type": "boolean"
+          },
+          "locked": {
+            "description": "true to lock the post so only moderators can reply.",
+            "type": "boolean"
+          },
+          "applied_tags": {
+            "description": "Tag IDs to apply; replaces the post's current tags. Get valid IDs from discord_get_forum_tags.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["thread_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "discord_update_membership_screening",
+      "description": "Update the server's membership screening form: set the welcome description and the rules new members must agree to. Only provided fields change. Requires the Community feature and the Manage Server permission. Returns the updated form.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "guild_id": {
+            "type": "string",
+            "pattern": "^\\d{17,20}$",
+            "description": "Discord server (guild) ID (snowflake)."
+          },
+          "description": {
+            "description": "Welcome message shown at the top of the screening form.",
+            "type": "string"
+          },
+          "form_fields": {
+            "description": "Rules/agreement blocks new members must accept. Replaces the existing fields when provided.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "description": "Title of this rules block."
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Individual rule lines shown under the label."
+                },
+                "required": {
+                  "description": "Whether the member must agree to this block. Default true.",
+                  "type": "boolean"
+                }
+              },
+              "required": ["label", "values"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["guild_id"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

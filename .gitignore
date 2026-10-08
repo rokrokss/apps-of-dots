@@ -7,3 +7,9 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 .apps-of-dots/
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+mcp_errors.log

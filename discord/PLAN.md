@@ -10,15 +10,15 @@ Updated 2026-10-08 after the research plan and the user's scope correction.
   migration, or gateway-event changes.
 - KakaoTalk and Recly remain references to their existing repositories.
 
-Without Events, a pinned executable dependency is preferable to a source fork. Run
-`@pasympa/discord-mcp@2.2.0` unchanged and wrap private configuration and official tunnel process
-management around it. Preserve its supported tools protocol.
+The implementation now lives in `discord/server`, following the request to maintain all three MCP
+servers in this repository. Build the local workspace package and wrap private configuration and
+official tunnel process management around it. Preserve the complete tools protocol.
 
 ## First implementation checkpoint
 
-Three workspace packages cover root CLI/catalog, Discord, and common runtime utilities. Commands
-include setup, start/stop/restart, status, logs, diagnostics, complete tool discovery, and local
-stdio access.
+Workspace packages cover root CLI/catalog, the local Discord server, adapters, and common utilities.
+Commands include setup, start/stop/restart, status, logs, diagnostics, complete tool discovery, and
+local stdio access.
 
 Use `tunnel-client runtimes` for supervision. The process survives terminal closure but must be
 started again after reboot. No separate daemon or platform service layer is needed at this
@@ -29,8 +29,8 @@ isolation, private credentials, process lifecycle, and readiness. Automated test
 directories and fake credentials. A real Discord/tunnel/dot round trip remains a separate live
 check.
 
-Stop at runnable code, documentation, and validation. Publishing, boot services, and a second
-managed integration are later checkpoints.
+Stop at runnable code, documentation, and validation. Publishing and boot services are later
+checkpoints. Telegram and WhatsApp are now included as additional managed integrations.
 
 ## Research retained
 

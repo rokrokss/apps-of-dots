@@ -8,6 +8,22 @@ export const integrations = [
     guide: "discord/README.md",
   },
   {
+    id: "telegram",
+    name: "Telegram",
+    kind: "built-in",
+    tools: 139,
+    events: false,
+    guide: "telegram/README.md",
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    kind: "built-in",
+    tools: 17,
+    events: false,
+    guide: "whatsapp/README.md",
+  },
+  {
     id: "kakaotalk",
     name: "KakaoTalk Bridge",
     kind: "external",

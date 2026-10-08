@@ -2,6 +2,8 @@
 import { Command } from "commander";
 import { dataHome } from "@apps-of-dots/runtime";
 import { registerDiscord } from "@apps-of-dots/discord";
+import { registerTelegram } from "@apps-of-dots/telegram";
+import { registerWhatsApp } from "@apps-of-dots/whatsapp";
 import { integrations } from "./catalog.js";
 
 const program = new Command()
@@ -25,6 +27,8 @@ program
   });
 
 registerDiscord(program, () => dataHome(program.opts<{ home?: string }>().home));
+registerTelegram(program, () => dataHome(program.opts<{ home?: string }>().home));
+registerWhatsApp(program, () => dataHome(program.opts<{ home?: string }>().home));
 try {
   await program.parseAsync();
 } catch (error) {

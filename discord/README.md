@@ -1,7 +1,8 @@
 # Discord
 
 Run the complete [Discord MCP](https://github.com/PaSympa/discord-mcp) through an OpenAI Secure MCP
-Tunnel. This adapter pins `@pasympa/discord-mcp@2.2.0` and executes its public CLI unchanged.
+Tunnel. The complete implementation lives in [`server/`](server/), based on PaSympa/discord-mcp
+2.2.0. The local workspace package replaces the external MCP dependency.
 
 **All 99 tools are always enabled.** There is no read-only preset or hidden toolset filter. Shell
 values of `DISCORD_MCP_TOOLSETS` do not reduce the catalog. Discord permissions, server
@@ -80,20 +81,23 @@ operations, without hiding tool definitions.
 
 ### Operations
 
-| Command         | Behavior                                                      |
-| --------------- | ------------------------------------------------------------- |
-| `start`         | Create/reuse the managed tunnel alias and inspect its health  |
-| `stop`          | Stop that process; preserve configuration                     |
-| `restart`       | Stop and relaunch using current configuration                 |
-| `status --json` | Report process, health, readiness, and UI/log locations       |
-| `logs --follow` | Follow recent logs with saved credential values redacted      |
-| `doctor`        | Inspect configuration, all 99 tools, and local runtime state  |
-| `doctor --live` | Also validate the bot token and run native tunnel diagnostics |
-| `mcp`           | Run the same upstream MCP over stdio for a local client       |
+| Command         | Behavior                                                       |
+| --------------- | -------------------------------------------------------------- |
+| `start`         | Create/reuse the managed tunnel alias and inspect its health   |
+| `stop`          | Stop that process; preserve configuration                      |
+| `restart`       | Stop and relaunch using current configuration                  |
+| `status --json` | Report process, health, readiness, and UI/log locations        |
+| `logs --follow` | Follow recent logs with saved credential values redacted       |
+| `doctor`        | Inspect configuration, all 99 tools, and local runtime state   |
+| `doctor --live` | Also validate the bot token and run native tunnel diagnostics  |
+| `mcp`           | Run the local MCP implementation over stdio for a local client |
 
 The bot connects lazily on a tool call. Tunnel readiness does not prove Discord login or permission
 to perform an action. A stopped runtime is valid configuration; `doctor` reports that state without
 starting it.
+
+`doctor --live` works with the tunnel running or stopped: it checks the bot token directly and runs
+native tunnel configuration diagnostics. It does not change the tunnel's state.
 
 `start` delegates to `tunnel-client runtimes connect`. It does not register a boot service. Run it
 again after reboot. Avoid another active client on the same tunnel ID, including on a different

@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import * as prompts from "@clack/prompts";
-import { executable, runCommand, tunnelEnvironment, validateSecret } from "@apps-of-dots/runtime";
+import {
+  executable,
+  runCommand,
+  tunnelEnvironment,
+  validateSecret,
+  setupSummary,
+} from "@apps-of-dots/runtime";
 import { loadConfig, parseGuilds, readSecrets, saveConfig } from "./config.js";
 import { runtime } from "./runtime.js";
 
@@ -80,17 +86,17 @@ export async function setup(home: string, options: SetupOptions) {
       throw new Error(`Provide ${flag} FILE, or run setup in an interactive terminal.`);
     return validateSecret(answer<string>(await prompts.password({ message: label })), label);
   }
-  const bot = await credential(
-    options.botTokenFile,
-    saved?.bot,
-    "Discord bot token",
-    "--bot-token-file",
-  );
   const tunnel = await credential(
     options.tunnelKeyFile,
     saved?.tunnel,
     "OpenAI tunnel runtime key",
     "--tunnel-key-file",
+  );
+  const bot = await credential(
+    options.botTokenFile,
+    saved?.bot,
+    "Discord bot token",
+    "--bot-token-file",
   );
   const allowedGuilds =
     options.guilds !== undefined ? parseGuilds(options.guilds) : (previous?.allowedGuilds ?? []);
@@ -108,7 +114,6 @@ export async function setup(home: string, options: SetupOptions) {
     guilds: allowedGuilds.length ? allowedGuilds : "all guilds accessible to the bot",
     next: "apps-of-dots discord start",
   };
-  if (interactive)
-    prompts.outro("Saved. All 99 tools are enabled. Run apps-of-dots discord start.");
+  if (interactive) prompts.outro(setupSummary(result));
   return result;
 }

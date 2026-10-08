@@ -18,7 +18,7 @@ test("CLI name, catalog and help describe the implemented scope", async () => {
   const catalog = JSON.parse(result.stdout);
   assert.deepEqual(
     catalog.map((app: { kind: string }) => app.kind),
-    ["built-in", "external", "external"],
+    ["built-in", "built-in", "built-in", "external", "external"],
   );
   assert.equal(catalog[0].events, false);
 });

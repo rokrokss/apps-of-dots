@@ -1,0 +1,19 @@
+{
+  "name": "@apps-of-dots/discord-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "In-repository Discord MCP implementation (99 tools)",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "discord.js": "14.27.0",
+    "dotenv": "17.4.2",
+    "zod": "4.6.5"
+  }
+}

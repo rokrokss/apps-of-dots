@@ -4,10 +4,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const require = createRequire(import.meta.url);
-export const UPSTREAM_VERSION = "2.2.0";
+export const SERVER_VERSION = "0.1.0";
 export const TOOL_COUNT = 99;
-export function upstreamEntry(): string {
-  return require.resolve("@pasympa/discord-mcp");
+export function serverEntry(): string {
+  return require.resolve("@apps-of-dots/discord-server");
 }
 
 export function discordEnvironment(token: string, guilds: string[] = []): Record<string, string> {
@@ -18,7 +18,7 @@ export function discordEnvironment(token: string, guilds: string[] = []): Record
   }
   return {
     ...env,
-    // Every upstream toolset is available, regardless of the caller's shell settings.
+    // Every local toolset is available, regardless of the caller's shell settings.
     DISCORD_TOKEN: token,
     DISCORD_MCP_TOOLSETS: "all",
     DISCORD_ALLOWED_GUILDS: guilds.join(","),
@@ -31,7 +31,7 @@ export function discordEnvironment(token: string, guilds: string[] = []): Record
 
 export async function inspectTools(
   command = process.execPath,
-  args = [upstreamEntry()],
+  args = [serverEntry()],
   env = discordEnvironment(""),
 ) {
   const client = new Client({ name: "apps-of-dots-inspector", version: "0.1.0" });
@@ -45,8 +45,8 @@ export async function inspectTools(
   }
 }
 
-export async function runUpstream(token: string, guilds: string[], cwd: string): Promise<number> {
-  const child = spawn(process.execPath, [upstreamEntry()], {
+export async function runServer(token: string, guilds: string[], cwd: string): Promise<number> {
+  const child = spawn(process.execPath, [serverEntry()], {
     env: discordEnvironment(token, guilds),
     cwd,
     stdio: "inherit",

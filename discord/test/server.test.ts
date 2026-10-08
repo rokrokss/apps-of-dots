@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { inspectTools, discordEnvironment } from "../src/upstream.js";
+import { inspectTools, discordEnvironment } from "../src/server.js";
 import { stdioEntry } from "../dist/runtime.js";
 import { saveConfig } from "../src/config.js";
 import { fixture } from "../../test/helpers.js";
+import { readFile } from "node:fs/promises";
 
 test(
-  "the real stdio wrapper preserves all 99 upstream tool schemas, including writes",
+  "local Discord and its stdio wrapper preserve the frozen 99-tool contract",
   { timeout: 30_000 },
   async (t) => {
     const { home, binary } = await fixture(t);
@@ -18,6 +19,13 @@ test(
       { bot: "unused-test-token", tunnel: "unused-test-key" },
     );
     const original = await inspectTools();
+    const snapshot = JSON.parse(
+      await readFile(new URL("../../test/contracts/discord.json", import.meta.url), "utf8"),
+    );
+    const normalized = original
+      .map(({ name, description, inputSchema }) => ({ name, description, inputSchema }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    assert.deepEqual(normalized, snapshot.tools);
     const wrapped = await inspectTools(process.execPath, [stdioEntry(), home], {
       ...discordEnvironment(""),
       DISCORD_MCP_TOOLSETS: "discovery",
@@ -41,7 +49,7 @@ test(
 );
 
 test(
-  "JSON-RPC calls reach the upstream server and errors return over stdio",
+  "JSON-RPC calls reach the local server and errors return over stdio",
   { timeout: 20_000 },
   async (t) => {
     const { home, binary } = await fixture(t);

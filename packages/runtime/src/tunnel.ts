@@ -39,7 +39,7 @@ export function tunnelEnvironment(home: string): NodeJS.ProcessEnv {
   // Do not inherit unrelated tunnel profiles, credentials, bindings, or raw logging.
   for (const key of Object.keys(env)) {
     if (
-      /^(CONTROL_PLANE_|MCP_|TUNNEL_CLIENT_|HARPOON_|CLOUDFLARED_|HEALTH_|LOG_|PID_|ADMIN_UI_|DISCORD_|DOTENV_CONFIG_)/.test(
+      /^(CONTROL_PLANE_|MCP_|TUNNEL_CLIENT_|HARPOON_|CLOUDFLARED_|HEALTH_|LOG_|PID_|ADMIN_UI_|DISCORD_|TELEGRAM_|WHATSAPP_|WHATSMEOW_|WEBHOOK_|DOTENV_CONFIG_)/.test(
         key,
       )
     )

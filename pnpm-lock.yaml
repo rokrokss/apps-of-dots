@@ -14,10 +14,19 @@ importers:
       '@apps-of-dots/runtime':
         specifier: workspace:*
         version: link:packages/runtime
+      '@apps-of-dots/telegram':
+        specifier: workspace:*
+        version: link:telegram
+      '@apps-of-dots/whatsapp':
+        specifier: workspace:*
+        version: link:whatsapp
       commander:
         specifier: 15.0.0
         version: 15.0.0
     devDependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.1
+        version: 1.32.1(zod@4.6.5)
       '@types/node':
         specifier: 24.19.1
         version: 24.19.1
@@ -33,6 +42,9 @@ importers:
 
   discord:
     dependencies:
+      '@apps-of-dots/discord-server':
+        specifier: workspace:*
+        version: link:server
       '@apps-of-dots/runtime':
         specifier: workspace:*
         version: link:../packages/runtime
@@ -42,14 +54,65 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: 1.32.1
         version: 1.32.1(zod@4.6.5)
-      '@pasympa/discord-mcp':
-        specifier: 2.2.0
-        version: 2.2.0
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
+
+  discord/server:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.1
+        version: 1.32.1(zod@4.6.5)
+      discord.js:
+        specifier: 14.27.0
+        version: 14.27.0
+      dotenv:
+        specifier: 17.4.2
+        version: 17.4.2
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
+  packages/managed-mcp:
+    dependencies:
+      '@apps-of-dots/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@clack/prompts':
+        specifier: 1.8.1
+        version: 1.8.1
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.1
+        version: 1.32.1(zod@4.6.5)
       commander:
         specifier: 15.0.0
         version: 15.0.0
 
   packages/runtime: {}
+
+  telegram:
+    dependencies:
+      '@apps-of-dots/managed-mcp':
+        specifier: workspace:*
+        version: link:../packages/managed-mcp
+      '@apps-of-dots/runtime':
+        specifier: workspace:*
+        version: link:../packages/runtime
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
+
+  whatsapp:
+    dependencies:
+      '@apps-of-dots/managed-mcp':
+        specifier: workspace:*
+        version: link:../packages/managed-mcp
+      '@apps-of-dots/runtime':
+        specifier: workspace:*
+        version: link:../packages/runtime
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
 
 packages:
 
@@ -260,11 +323,6 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
-
-  '@pasympa/discord-mcp@2.2.0':
-    resolution: {integrity: sha512-8mq9avtWLZ0/T5i3fBI+9RohDmeOp3Twwq1itRGtWRW5znr48QTf7mtPxYjgEsc3HkmfrgYcAhuEF9wcZcLD1g==}
-    engines: {node: '>=22.0.0'}
-    hasBin: true
 
   '@sapphire/async-queue@1.5.5':
     resolution: {integrity: sha512-cvGzxbba6sav2zZkH8GPf2oGk9yYoD5qrNWdu9fRehifgnFZJMV+nuy2nON2roRO4yQQ+v7MK/Pktl/HgfsUXg==}
@@ -894,18 +952,6 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@4.6.5)
     transitivePeerDependencies:
       - supports-color
-
-  '@pasympa/discord-mcp@2.2.0':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.5)
-      discord.js: 14.27.0
-      dotenv: 17.4.2
-      zod: 4.6.5
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
 
   '@sapphire/async-queue@1.5.5': {}
 

@@ -16,17 +16,21 @@
     "build": "pnpm -r build && tsc -p tsconfig.json",
     "apps-of-dots": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
-    "test": "pnpm build && node --import tsx --test test/*.test.ts discord/test/*.test.ts packages/runtime/test/*.test.ts",
+    "test": "pnpm build && node --import tsx --test test/*.test.ts discord/test/*.test.ts discord/server/test/*.test.ts telegram/test/*.test.ts whatsapp/test/*.test.ts packages/runtime/test/*.test.ts packages/managed-mcp/test/*.test.ts",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
+    "test:servers": "pnpm build && node --import tsx test/server-contracts.mts",
     "format": "prettier --write .",
     "check": "prettier --check . && pnpm typecheck"
   },
   "dependencies": {
     "@apps-of-dots/discord": "workspace:*",
     "@apps-of-dots/runtime": "workspace:*",
+    "@apps-of-dots/telegram": "workspace:*",
+    "@apps-of-dots/whatsapp": "workspace:*",
     "commander": "15.0.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@types/node": "24.19.1",
     "prettier": "3.9.9",
     "tsx": "4.23.15",

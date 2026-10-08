@@ -15,7 +15,7 @@
     "@apps-of-dots/runtime": "workspace:*",
     "@clack/prompts": "1.8.1",
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@pasympa/discord-mcp": "2.2.0",
+    "@apps-of-dots/discord-server": "workspace:*",
     "commander": "15.0.0"
   }
 }

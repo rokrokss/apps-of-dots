@@ -1,5 +1,8 @@
 packages:
   - discord
+  - discord/server
+  - telegram
+  - whatsapp
   - packages/*
 
 minimumReleaseAge: 1440

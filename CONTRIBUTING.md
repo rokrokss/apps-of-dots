@@ -6,12 +6,20 @@ Use Node.js 24+ and pnpm 10.28.2.
 pnpm install --frozen-lockfile
 pnpm build
 pnpm test
+pnpm test:servers
 pnpm check
 ```
 
 `pnpm dev --help` runs the CLI source against built workspace packages. Rebuild after editing shared
 packages. Tests use temporary directories and fake keys; they never require a live Discord or OpenAI
 account.
+
+Telegram/WhatsApp contract checks additionally require uv, Go 1.26+ and a C compiler. They build the
+in-repository sources with locked libraries in a temporary runtime, compare real FastMCP schemas to
+the frozen original contracts, and remove the runtime afterward. They never sign in or require
+account credentials. Source attribution and licenses must stay with the local servers. `pnpm test`
+includes the local Discord server's unit tests. `pnpm test:servers` also runs both Python test
+suites and the Go bridge tests with their locked development dependencies.
 
 ## Language
 

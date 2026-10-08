@@ -1,23 +1,22 @@
 import { open, stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { Command } from "commander";
-import { redact, runCommand, tunnelEnvironment, type RuntimeStatus } from "@apps-of-dots/runtime";
+import { Help, type Command } from "commander";
+import {
+  commandHelp,
+  jsonHelp,
+  compareCommands,
+  printResult as print,
+  printStartupHint,
+  printTools,
+  redact,
+  runCommand,
+  tunnelEnvironment,
+  type RuntimeStatus,
+} from "@apps-of-dots/runtime";
 import { loadConfig, requireConfig, readSecrets } from "./config.js";
 import { setup, verifyBot, type SetupOptions } from "./setup.js";
-import { inspectTools, runUpstream, TOOL_COUNT, UPSTREAM_VERSION } from "./upstream.js";
+import { inspectTools, runServer, TOOL_COUNT, SERVER_VERSION } from "./server.js";
 import { runtime } from "./runtime.js";
-
-function print(value: unknown, json: boolean): void {
-  if (json) console.log(JSON.stringify(value, null, 2));
-  else if (value && typeof value === "object") {
-    for (const [key, detail] of Object.entries(value)) {
-      if (detail !== undefined)
-        console.log(
-          `${key.padEnd(16)} ${typeof detail === "object" ? JSON.stringify(detail) : String(detail)}`,
-        );
-    }
-  }
-}
 
 function printStatus(status: RuntimeStatus, json: boolean): void {
   print(
@@ -38,11 +37,11 @@ async function doctor(home: string, live: boolean) {
       checks.push({ name, ok: false, detail: (error as Error).message });
     }
   }
-  await check("all upstream tools", async () => {
+  await check("all local tools", async () => {
     const tools = await inspectTools();
     if (tools.length !== TOOL_COUNT)
       throw new Error(`Expected ${TOOL_COUNT} tools; discovered ${tools.length}.`);
-    return `${tools.length} tools from @pasympa/discord-mcp@${UPSTREAM_VERSION}`;
+    return `${tools.length} tools from local Discord server ${SERVER_VERSION}`;
   });
   await check("configuration", async () => {
     const config = await requireConfig(home);
@@ -91,25 +90,27 @@ async function readLog(path: string, offset?: number): Promise<{ offset: number;
 export function registerDiscord(program: Command, home: () => string): void {
   const discord = program
     .command("discord")
-    .description("All 99 Discord MCP tools through a private OpenAI tunnel");
+    .description("Discord MCP through a private OpenAI tunnel");
   discord
     .command("setup")
-    .description("Configure a bot and an existing tunnel; keys are hidden or read from files")
+    .description(commandHelp.setup)
     .option("--tunnel-id <id>", "Existing OpenAI tunnel ID")
-    .option("--bot-token-file <path>", "Read the Discord bot token from a file")
     .option("--tunnel-key-file <path>", "Read the tunnel runtime key from a file")
-    .option("--tunnel-client <path>", "Path to the official tunnel-client executable")
+    .option("--tunnel-client <path>", "Official tunnel-client executable")
+    .option("--bot-token-file <path>", "Read the Discord bot token from a file")
     .option("--guilds <ids>", "Optional comma-separated guild IDs, or all (default: all)")
     .option("--skip-validation", "Save without contacting Discord; useful for offline provisioning")
-    .option("--json", "Print machine-readable output without prompting")
+    .option("--json", jsonHelp.setup)
     .action(async (options: SetupOptions) => {
-      print(await setup(home(), options), Boolean(options.json));
+      const result = await setup(home(), options);
+      if (options.json || !process.stdin.isTTY || !process.stdout.isTTY)
+        print(result, Boolean(options.json));
     });
 
   discord
     .command("start")
-    .description("Start or reuse the official managed tunnel process")
-    .option("--json", "Print machine-readable status")
+    .description(commandHelp.start)
+    .option("--json", jsonHelp.status)
     .action(async (options: { json?: boolean }) => {
       const directory = home();
       const config = await requireConfig(directory);
@@ -117,21 +118,14 @@ export function registerDiscord(program: Command, home: () => string): void {
       const status = await (await runtime(directory, config)).start();
       printStatus(status, Boolean(options.json));
       if (!status.processRunning || !status.healthy) process.exitCode = 1;
-      else if (!status.ready && !options.json)
-        console.log(
-          "Still starting. Run apps-of-dots discord status again before connecting the plugin.",
-        );
+      printStartupHint("discord", status, options.json);
     });
 
   for (const action of ["stop", "restart"] as const) {
     discord
       .command(action)
-      .description(
-        action === "stop"
-          ? "Stop the managed process and keep configuration"
-          : "Reload configuration and restart the managed process",
-      )
-      .option("--json", "Print machine-readable status")
+      .description(commandHelp[action])
+      .option("--json", jsonHelp.status)
       .action(async (options: { json?: boolean }) => {
         const directory = home();
         const config = await requireConfig(directory);
@@ -140,6 +134,7 @@ export function registerDiscord(program: Command, home: () => string): void {
         const stopped = await runner.stop();
         const status = action === "restart" ? await runner.start() : stopped;
         printStatus(status, Boolean(options.json));
+        if (action === "restart") printStartupHint("discord", status, options.json);
         if (action === "restart" && (!status.processRunning || !status.healthy))
           process.exitCode = 1;
       });
@@ -147,8 +142,8 @@ export function registerDiscord(program: Command, home: () => string): void {
 
   discord
     .command("status")
-    .description("Show process, health, and readiness separately")
-    .option("--json", "Print machine-readable status")
+    .description(commandHelp.status)
+    .option("--json", jsonHelp.status)
     .action(async (options: { json?: boolean }) => {
       const directory = home();
       const config = await loadConfig(directory);
@@ -164,9 +159,13 @@ export function registerDiscord(program: Command, home: () => string): void {
 
   discord
     .command("doctor")
-    .description("Check local setup and the full upstream MCP tool catalog")
-    .option("--live", "Also verify Discord authentication and run native tunnel diagnostics")
-    .option("--json", "Print machine-readable checks")
+    .description(commandHelp.doctor)
+    .option("--live", "Check bot authentication and tunnel configuration (running or stopped)")
+    .addHelpText(
+      "after",
+      "\nLive checks work with the tunnel running or stopped; the bot token is checked directly.",
+    )
+    .option("--json", jsonHelp.checks)
     .action(async (options: { json?: boolean; live?: boolean }) => {
       const result = await doctor(home(), Boolean(options.live));
       if (options.json) print(result, true);
@@ -178,25 +177,20 @@ export function registerDiscord(program: Command, home: () => string): void {
 
   discord
     .command("tools")
-    .description("Inspect every upstream tool without signing in to Discord")
-    .option("--json", "Print full tool schemas")
+    .description(commandHelp.tools)
+    .option("--json", jsonHelp.tools)
     .action(async (options: { json?: boolean }) => {
       const tools = await inspectTools();
-      if (options.json) print(tools, true);
-      else {
-        console.log(`${tools.length} tools · @pasympa/discord-mcp@${UPSTREAM_VERSION}\n`);
-        for (const tool of tools)
-          console.log(`${tool.name}\n  ${tool.description?.replaceAll("\n", " ") ?? ""}`);
-      }
+      printTools("Discord", tools, options.json);
     });
 
   discord
     .command("mcp")
-    .description("Run the same complete MCP over stdio for a local client")
+    .description(commandHelp.mcp)
     .action(async () => {
       const directory = home();
       const config = await requireConfig(directory);
-      process.exitCode = await runUpstream(
+      process.exitCode = await runServer(
         (await readSecrets(directory, config)).bot,
         config.allowedGuilds,
         join(directory, "discord"),
@@ -205,7 +199,7 @@ export function registerDiscord(program: Command, home: () => string): void {
 
   discord
     .command("logs")
-    .description("Show recent managed tunnel logs with credentials redacted")
+    .description(commandHelp.logs)
     .option("-f, --follow", "Follow new log output until Ctrl-C")
     .action(async (options: { follow?: boolean }) => {
       const directory = home();
@@ -273,4 +267,11 @@ export function registerDiscord(program: Command, home: () => string): void {
         });
       }
     });
+  discord.configureHelp({
+    visibleCommands: (cmd) => new Help().visibleCommands(cmd).sort(compareCommands),
+  });
+  discord.addHelpText(
+    "after",
+    "\nFirst use: setup → start → status\nDiscord uses a bot token; no separate login is required.",
+  );
 }
