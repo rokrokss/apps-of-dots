@@ -131,3 +131,24 @@ pnpm apps-of-dots discord stop
 로그인 없이 레포 내부 Python·Go 코드를 빌드하고 원본 도구 스키마와 비교합니다. 실제 계정 인증·OpenAI
 터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Linux용 CI 설정은 포함되어 있고, Windows와 부팅
 자동 실행은 후속 범위입니다.
+
+## 다른 컴퓨터에서 사용하기
+
+컴퓨터마다 따로 설치해야 합니다. 새 Mac에서는 아래 준비물을 설치한 뒤 위와 같이
+클론·빌드·설정합니다. `pnpm apps-of-dots ui`를 쓰는 것이 가장 간단합니다. `xcode-select`는 WhatsApp
+브리지 빌드에 필요한 C 컴파일러를 설치합니다.
+
+```sh
+xcode-select --install
+brew install node pnpm uv go openai/tools/tunnel-client
+```
+
+- 비공개 데이터 폴더(macOS는 `~/Library/Application Support/apps-of-dots`)를 복사하지 마세요.
+  런타임에 원래 컴퓨터 기준의 절대 경로와 빌드 결과가 들어 있고, Telegram 세션을 두 컴퓨터에서
+  동시에 쓰면 중복 세션 오류가 납니다. Telegram·WhatsApp은 새 컴퓨터에서 QR로 다시 로그인하세요.
+- 터널 ID 하나에는 클라이언트를 하나만 실행합니다. 기존 컴퓨터의 터널을 먼저 중지하거나, 컴퓨터마다
+  별도의 터널 ID를 사용하세요.
+- 기존 컴퓨터를 더 이상 쓰지 않으면 Telegram·WhatsApp의 기기 목록에서 그 세션을 해제하세요. 터널을
+  중지해도 세션은 해제되지 않습니다.
+- 노트북이 잠자기에 들어가면 터널 연결이 끊깁니다. `caffeinate -i`는 실행 중에 유휴 잠자기를 막지만,
+  덮개를 닫았을 때의 잠자기는 막지 못합니다.

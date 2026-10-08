@@ -146,6 +146,28 @@ Setup, status, tools, and diagnostics offer `--json`. Use `--home <path>` or `AP
 an isolated installation. KakaoTalk and Recly remain external projects; this CLI does not change
 their installations.
 
+## Another computer
+
+Each computer needs its own installation. On a new Mac, install the prerequisites, then clone,
+build, and set up as above; `pnpm apps-of-dots ui` is the quickest path. `xcode-select` provides the
+C compiler for the WhatsApp bridge.
+
+```sh
+xcode-select --install
+brew install node pnpm uv go openai/tools/tunnel-client
+```
+
+- Do not copy the private data directory (`~/Library/Application Support/apps-of-dots` on macOS).
+  Its runtime contains absolute paths and binaries built for the original computer, and a Telegram
+  session used from two computers at once fails with a duplicate-session error. Sign in to Telegram
+  and WhatsApp again with a QR code instead.
+- Run one active client per tunnel ID. Stop the tunnel on the old computer first, or create a
+  separate tunnel ID for each computer.
+- When you retire the old computer, remove its session from the Telegram and WhatsApp device lists.
+  Stopping a tunnel does not revoke it.
+- A sleeping laptop disconnects its tunnels. `caffeinate -i` prevents idle sleep while it runs; it
+  does not prevent sleep when the lid is closed.
+
 ## Project status
 
 This is the first implementation. macOS has local CLI and MCP contract coverage; CI is configured
