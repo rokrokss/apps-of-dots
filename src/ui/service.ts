@@ -161,13 +161,23 @@ export function createSetupService(
     if (!pendingSnapshot) {
       pendingSnapshot = (async () => {
         const apps = await Promise.all(integrations.map(appView));
-        const config = await loadDiscordConfig(home).catch(() => undefined);
-        const tunnelClientInstalled = await executable(
-          config?.tunnelClient || "tunnel-client",
-        ).then(
-          () => true,
-          () => false,
-        );
+        const configs = await Promise.all([
+          loadDiscordConfig(home).catch(() => undefined),
+          loadConfig(home, "telegram").catch(() => undefined),
+          loadConfig(home, "whatsapp").catch(() => undefined),
+        ]);
+        // Resolve each app's tunnel-client the way its setup does: saved path, else PATH.
+        const paths = new Set(configs.map((config) => config?.tunnelClient || "tunnel-client"));
+        const tunnelClientInstalled = (
+          await Promise.all(
+            [...paths].map((path) =>
+              executable(path).then(
+                () => true,
+                () => false,
+              ),
+            ),
+          )
+        ).includes(true);
         return {
           apps,
           tunnelClientInstalled,

@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { childEnvironment } from "@apps-of-dots/managed-mcp";
 
 const require = createRequire(import.meta.url);
 export const SERVER_VERSION = "0.1.0";
@@ -11,13 +12,8 @@ export function serverEntry(): string {
 }
 
 export function discordEnvironment(token: string, guilds: string[] = []): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined && !/^(DISCORD_|DOTENV_CONFIG_|CONTROL_PLANE_)/.test(key))
-      env[key] = value;
-  }
   return {
-    ...env,
+    ...childEnvironment(),
     // Every local toolset is available, regardless of the caller's shell settings.
     DISCORD_TOKEN: token,
     DISCORD_MCP_TOOLSETS: "all",

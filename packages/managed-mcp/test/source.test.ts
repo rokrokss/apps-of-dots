@@ -10,7 +10,7 @@ import {
   type SourceSpec,
 } from "../src/source.js";
 
-test("local source changes require reinstall, while generated Python state does not", async (t) => {
+test("local source changes require reinstall, while generated Python state and tests do not", async (t) => {
   const { home } = await fixture(t);
   const source = join(home, "source");
   await mkdir(source);
@@ -27,6 +27,10 @@ test("local source changes require reinstall, while generated Python state does 
   await requireInstallation(home, spec);
   await mkdir(join(source, "__pycache__"));
   await writeFile(join(source, "__pycache__", "generated.py"), "ignored");
+  await requireInstallation(home, spec);
+  await mkdir(join(source, "tests"));
+  await writeFile(join(source, "tests", "test_main.py"), "# test only\n");
+  await writeFile(join(source, "main_test.go"), "package main\n");
   await requireInstallation(home, spec);
   await writeFile(join(source, "uv.lock"), "version = 2\n");
   await assert.rejects(requireInstallation(home, spec), /source changed.*telegram install/);

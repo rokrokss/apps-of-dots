@@ -5,3 +5,4 @@ export * from "./setup.js";
 export * from "./commands.js";
 export * from "./catalog.js";
 export * from "./login.js";
+export * from "./logs.js";

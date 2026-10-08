@@ -36,8 +36,10 @@ export async function sourceFingerprint(spec: SourceSpec): Promise<string> {
     )) {
       if (
         entry.name.startsWith(".") ||
-        ["__pycache__", "node_modules", "dist"].includes(entry.name) ||
-        entry.name.endsWith(".egg-info")
+        ["__pycache__", "node_modules", "dist", "tests"].includes(entry.name) ||
+        entry.name.endsWith(".egg-info") ||
+        // Tests never reach the installed runtime; changing them must not force a reinstall.
+        entry.name.endsWith("_test.go")
       )
         continue;
       const path = join(directory, entry.name);

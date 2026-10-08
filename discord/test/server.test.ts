@@ -48,6 +48,26 @@ test(
   },
 );
 
+test("the local Discord server receives runtime basics, not unrelated shell credentials", () => {
+  const saved = { ...process.env };
+  try {
+    Object.assign(process.env, {
+      OPENAI_API_KEY: "other-key",
+      NODE_EXTRA_CA_CERTS: "/certs/extra.pem",
+      DISCORD_MCP_TOOLSETS: "discovery",
+    });
+    const env = discordEnvironment("bot-token", ["123456789012345678"]);
+    assert.equal(env.PATH, process.env.PATH);
+    assert.equal(env.NODE_EXTRA_CA_CERTS, "/certs/extra.pem");
+    assert.equal(env.OPENAI_API_KEY, undefined);
+    assert.equal(env.DISCORD_TOKEN, "bot-token");
+    assert.equal(env.DISCORD_MCP_TOOLSETS, "all");
+    assert.equal(env.DISCORD_ALLOWED_GUILDS, "123456789012345678");
+  } finally {
+    process.env = saved;
+  }
+});
+
 test(
   "JSON-RPC calls reach the local server and errors return over stdio",
   { timeout: 20_000 },

@@ -1,4 +1,3 @@
-import { open, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Help, type Command } from "commander";
 import {
@@ -8,11 +7,11 @@ import {
   printResult as print,
   printStartupHint,
   printTools,
-  redact,
   runCommand,
   tunnelEnvironment,
   type RuntimeStatus,
 } from "@apps-of-dots/runtime";
+import { showLogs } from "@apps-of-dots/managed-mcp";
 import { loadConfig, requireConfig, readSecrets } from "./config.js";
 import { setup, verifyBot, type SetupOptions } from "./setup.js";
 import { inspectTools, runServer, TOOL_COUNT, SERVER_VERSION } from "./server.js";
@@ -71,21 +70,6 @@ async function doctor(home: string, live: boolean) {
     }
   }
   return { ok: checks.every((check) => check.ok), checks, status, liveChecks: live };
-}
-
-async function readLog(path: string, offset?: number): Promise<{ offset: number; text: string }> {
-  const size = (await stat(path)).size;
-  const start = offset !== undefined && offset <= size ? offset : Math.max(0, size - 128 * 1024);
-  const file = await open(path, "r");
-  try {
-    const buffer = Buffer.alloc(Math.min(size - start, 128 * 1024));
-    const { bytesRead } = await file.read(buffer, 0, buffer.length, start);
-    let text = buffer.subarray(0, bytesRead).toString("utf8");
-    if (offset === undefined && start > 0) text = text.slice(text.indexOf("\n") + 1);
-    return { offset: start + bytesRead, text };
-  } finally {
-    await file.close();
-  }
 }
 
 export function registerDiscord(program: Command, home: () => string): void {
@@ -202,65 +186,11 @@ export function registerDiscord(program: Command, home: () => string): void {
       const status = await (await runtime(directory, config)).status();
       if (!status.logPath)
         throw new Error("No runtime logs yet. Run apps-of-dots discord start first.");
-      const secrets = Object.values(await readSecrets(directory, config));
-      let offset: number | undefined;
-      let pendingLine = "";
-      let discardingLine = false;
-      const flush = async () => {
-        const next = await readLog(status.logPath!, offset);
-        if (offset !== undefined && next.offset < offset) {
-          pendingLine = "";
-          discardingLine = false;
-        }
-        offset = next.offset;
-        // Never print an incomplete line: a secret may span filesystem reads.
-        let incoming = next.text;
-        if (discardingLine) {
-          const end = incoming.indexOf("\n");
-          if (end < 0) return;
-          incoming = incoming.slice(end + 1);
-          discardingLine = false;
-        }
-        pendingLine += incoming;
-        const end = pendingLine.lastIndexOf("\n");
-        if (end >= 0) {
-          process.stdout.write(redact(pendingLine.slice(0, end + 1), secrets));
-          pendingLine = pendingLine.slice(end + 1);
-        }
-        if (pendingLine.length > 128 * 1024) {
-          pendingLine = "";
-          discardingLine = true;
-        }
-      };
-      await flush();
-      if (options.follow) {
-        await new Promise<void>((resolve, reject) => {
-          let pending = false;
-          const timer = setInterval(() => {
-            if (pending) return;
-            pending = true;
-            flush()
-              .catch((error) => {
-                cleanup();
-                reject(error);
-              })
-              .finally(() => {
-                pending = false;
-              });
-          }, 500);
-          const cleanup = () => {
-            clearInterval(timer);
-            process.off("SIGINT", done);
-            process.off("SIGTERM", done);
-          };
-          const done = () => {
-            cleanup();
-            resolve();
-          };
-          process.once("SIGINT", done);
-          process.once("SIGTERM", done);
-        });
-      }
+      await showLogs(
+        status.logPath,
+        Object.values(await readSecrets(directory, config)),
+        Boolean(options.follow),
+      );
     });
   discord.configureHelp({
     visibleCommands: (cmd) => new Help().visibleCommands(cmd).sort(compareCommands),

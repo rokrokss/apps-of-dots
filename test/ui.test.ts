@@ -14,6 +14,7 @@ import { telegram } from "../telegram/src/index.js";
 import { whatsapp } from "../whatsapp/src/index.js";
 import { fakeInstallation, unusedPort } from "../packages/managed-mcp/test/helpers.js";
 import { withAppLock } from "../packages/managed-mcp/src/process.js";
+import { saveConfig as saveManagedConfig } from "../packages/managed-mcp/src/config.js";
 
 async function webFixture(
   t: TestContext,
@@ -124,6 +125,24 @@ test("local UI serves assets, gates its API, and rejects foreign origins and hos
   assert.equal(state.tunnelClientInstalled, true);
   assert.match(state.apps[1].commands.join("\n"), /telegram login/);
   assert.match(state.apps[2].commands.join("\n"), /whatsapp login/);
+});
+
+test("tunnel-client detection honors any configured app's executable", async (t) => {
+  const { home, binary } = await fixture(t);
+  await saveManagedConfig(
+    home,
+    "telegram",
+    { tunnelId: "tunnel_test", tunnelClient: binary, settings: { apiId: "123" } },
+    { tunnel: "key", apiHash: "0".repeat(32) },
+  );
+  const oldPath = process.env.PATH;
+  process.env.PATH = join(home, "missing");
+  t.after(() => {
+    process.env.PATH = oldPath;
+  });
+  const service = createSetupService(home);
+  t.after(() => service.close());
+  assert.equal((await service.snapshot()).tunnelClientInstalled, true);
 });
 
 test(
