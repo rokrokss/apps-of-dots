@@ -13,10 +13,10 @@ importers:
         version: link:discord
       '@apps-of-dots/managed-mcp':
         specifier: workspace:*
-        version: link:packages/managed-mcp
+        version: link:core/packages/managed-mcp
       '@apps-of-dots/runtime':
         specifier: workspace:*
-        version: link:packages/runtime
+        version: link:core/packages/runtime
       '@apps-of-dots/telegram':
         specifier: workspace:*
         version: link:telegram
@@ -49,6 +49,23 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
+  core/packages/managed-mcp:
+    dependencies:
+      '@apps-of-dots/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@clack/prompts':
+        specifier: 1.8.1
+        version: 1.8.1
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.1
+        version: 1.32.1(zod@4.6.5)
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
+
+  core/packages/runtime: {}
+
   discord:
     dependencies:
       '@apps-of-dots/discord-server':
@@ -56,10 +73,10 @@ importers:
         version: link:server
       '@apps-of-dots/managed-mcp':
         specifier: workspace:*
-        version: link:../packages/managed-mcp
+        version: link:../core/packages/managed-mcp
       '@apps-of-dots/runtime':
         specifier: workspace:*
-        version: link:../packages/runtime
+        version: link:../core/packages/runtime
       '@clack/prompts':
         specifier: 1.8.1
         version: 1.8.1
@@ -85,31 +102,14 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
 
-  packages/managed-mcp:
-    dependencies:
-      '@apps-of-dots/runtime':
-        specifier: workspace:*
-        version: link:../runtime
-      '@clack/prompts':
-        specifier: 1.8.1
-        version: 1.8.1
-      '@modelcontextprotocol/sdk':
-        specifier: 1.32.1
-        version: 1.32.1(zod@4.6.5)
-      commander:
-        specifier: 15.0.0
-        version: 15.0.0
-
-  packages/runtime: {}
-
   telegram:
     dependencies:
       '@apps-of-dots/managed-mcp':
         specifier: workspace:*
-        version: link:../packages/managed-mcp
+        version: link:../core/packages/managed-mcp
       '@apps-of-dots/runtime':
         specifier: workspace:*
-        version: link:../packages/runtime
+        version: link:../core/packages/runtime
       commander:
         specifier: 15.0.0
         version: 15.0.0
@@ -118,10 +118,10 @@ importers:
     dependencies:
       '@apps-of-dots/managed-mcp':
         specifier: workspace:*
-        version: link:../packages/managed-mcp
+        version: link:../core/packages/managed-mcp
       '@apps-of-dots/runtime':
         specifier: workspace:*
-        version: link:../packages/runtime
+        version: link:../core/packages/runtime
       commander:
         specifier: 15.0.0
         version: 15.0.0

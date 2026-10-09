@@ -11,7 +11,7 @@ libraries; it never clones or installs an external MCP.
 | Commit  | `895404542017f34a900f9f572a5497c275a96440`                                            |
 | Python  | 3.12; `server/uv.lock`, installed with `uv sync --frozen --no-dev`                    |
 | Bridge  | Go 1.26+, CGO; `go build -mod=readonly`, `bridge/go.mod` and `go.sum`                 |
-| Catalog | 17 tools, frozen definitions in `test/contracts/whatsapp.json`                        |
+| Catalog | 17 tools, frozen definitions in `core/test/contracts/whatsapp.json`                   |
 | License | MIT, Luke Harries / Very Good Plugins; [Python](server/LICENSE), [Go](bridge/LICENSE) |
 
 The TypeScript supervisor adds private configuration, pairing, authenticated health gating and

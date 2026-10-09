@@ -5,7 +5,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { inspectTools, discordEnvironment } from "../src/server.js";
 import { stdioEntry } from "../dist/runtime.js";
 import { saveConfig } from "../src/config.js";
-import { fixture } from "../../test/helpers.js";
+import { fixture } from "../../core/test/helpers.js";
 import { readFile } from "node:fs/promises";
 
 test(
@@ -20,7 +20,7 @@ test(
     );
     const original = await inspectTools();
     const snapshot = JSON.parse(
-      await readFile(new URL("../../test/contracts/discord.json", import.meta.url), "utf8"),
+      await readFile(new URL("../../core/test/contracts/discord.json", import.meta.url), "utf8"),
     );
     const normalized = original
       .map(({ name, description, inputSchema }) => ({ name, description, inputSchema }))

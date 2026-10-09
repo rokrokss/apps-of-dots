@@ -14,15 +14,15 @@ One local Discord server process runs per managed tunnel. The stdio adapter load
 configuration and forwards process streams and shutdown signals. It does not interpret or rewrite
 tool calls. There is no Discord HTTP listener or MCP Events subsystem.
 
-| Directory               | Responsibility                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `src/`                  | CLI name, help, catalog, and command registration                               |
-| `discord/`              | Local TypeScript server, bot configuration, commands, contract tests            |
-| `telegram/`             | Local Python server, personal-account QR login, Telethon environment            |
-| `whatsapp/`             | Local Go bridge and Python server, pairing and supervision                      |
-| `packages/managed-mcp/` | Local code/dependency preparation, private config, lifecycle CLI, child cleanup |
-| `packages/runtime/`     | Private storage, quoting, official tunnel management                            |
-| `kakaotalk/`, `recly/`  | Externally maintained integration references                                    |
+| Directory                    | Responsibility                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| `core/src/`                  | CLI name, help, catalog, and command registration                               |
+| `discord/`                   | Local TypeScript server, bot configuration, commands, contract tests            |
+| `telegram/`                  | Local Python server, personal-account QR login, Telethon environment            |
+| `whatsapp/`                  | Local Go bridge and Python server, pairing and supervision                      |
+| `core/packages/managed-mcp/` | Local code/dependency preparation, private config, lifecycle CLI, child cleanup |
+| `core/packages/runtime/`     | Private storage, quoting, official tunnel management                            |
+| `kakaotalk/`, `recly/`       | Externally maintained integration references                                    |
 
 The common runtime has no Discord dependency. It uses an app ID, data directory, executable command,
 and tunnel/key references. The official client owns native supervision, process identity, profiles,
@@ -50,9 +50,10 @@ data directory, waits for authenticated loopback health, then starts the Python 
 forwards MCP bytes unchanged and cleans up children on failure, signals and stdin EOF. Only the
 Python MCP owns stdout. Bridge output joins stderr and native tunnel logs.
 
-The personal-account integrations use `packages/managed-mcp` for installation, configuration, CLI
-lifecycle and process utilities. Their account-specific code remains in the top-level app package.
-The common `packages/runtime` still owns native tunnel management and private storage primitives.
+The personal-account integrations use `core/packages/managed-mcp` for installation, configuration,
+CLI lifecycle and process utilities. Their account-specific code remains in the top-level app
+package. The common `core/packages/runtime` still owns native tunnel management and private storage
+primitives.
 
 Offline `tools` inspection imports the local FastMCP definitions with a temporary empty session and
 skips account startup; it does not make live app calls. Normal serving always uses the real

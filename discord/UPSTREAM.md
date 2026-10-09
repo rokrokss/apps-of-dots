@@ -3,13 +3,13 @@
 The complete TypeScript implementation and its tests live in [`server/`](server/), built as the
 local `@apps-of-dots/discord-server` workspace package. There is no external Discord MCP dependency.
 
-| Item              | Imported baseline                                                                |
-| ----------------- | -------------------------------------------------------------------------------- |
-| Project           | [PaSympa/discord-mcp](https://github.com/PaSympa/discord-mcp)                    |
-| Release           | `@pasympa/discord-mcp@2.2.0`                                                     |
-| Published gitHead | `5d13fea701d567f1c67a4f21f75844db1f1acda4`                                       |
-| Catalog           | 99 tools across 14 toolsets; frozen definitions in `test/contracts/discord.json` |
-| License           | [MIT](server/LICENSE), copyright 2026 Léandre Moreau                             |
+| Item              | Imported baseline                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| Project           | [PaSympa/discord-mcp](https://github.com/PaSympa/discord-mcp)                         |
+| Release           | `@pasympa/discord-mcp@2.2.0`                                                          |
+| Published gitHead | `5d13fea701d567f1c67a4f21f75844db1f1acda4`                                            |
+| Catalog           | 99 tools across 14 toolsets; frozen definitions in `core/test/contracts/discord.json` |
+| License           | [MIT](server/LICENSE), copyright 2026 Léandre Moreau                                  |
 
 Tool implementation and tests are retained. Local packaging uses a private workspace name and
 version and a separate CommonJS build; the server reports that local version. Formatting follows

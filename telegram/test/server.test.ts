@@ -5,8 +5,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { saveConfig } from "@apps-of-dots/managed-mcp";
 import { inspectTools } from "../../discord/src/server.js";
-import { fixture } from "../../test/helpers.js";
-import { fakeInstallation } from "../../packages/managed-mcp/test/helpers.js";
+import { fixture } from "../../core/test/helpers.js";
+import { fakeInstallation } from "../../core/packages/managed-mcp/test/helpers.js";
 import { SOURCE, sessionPath, telegramEnvironment, preflight } from "../src/server.js";
 
 test(

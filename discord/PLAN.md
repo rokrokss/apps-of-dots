@@ -49,4 +49,4 @@ checkpoints. Telegram and WhatsApp are now included as additional managed integr
   private stdio/HTTP connections. Public plugin-directory distribution requires a separate hosting
   model.
 
-See [architecture](../docs/architecture.md) and [usage](README.md).
+See [architecture](../core/docs/architecture.md) and [usage](README.md).

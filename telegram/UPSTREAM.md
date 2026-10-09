@@ -9,7 +9,7 @@ libraries from its frozen `uv.lock`; it never clones or installs an external MCP
 | Commit            | `87b38d3c453fbf6bb516259732296d5b6fcda376`                                |
 | Original metadata | `telegram-mcp` 2.0.1                                                      |
 | Runtime           | Python 3.12, `uv sync --frozen --no-dev`                                  |
-| Catalog           | 139 tools, frozen definitions in `test/contracts/telegram.json`           |
+| Catalog           | 139 tools, frozen definitions in `core/test/contracts/telegram.json`      |
 | License           | [Apache-2.0](server/LICENSE); retained authors in `server/pyproject.toml` |
 
 The original package metadata is retained for attribution and compatibility with its installation

@@ -10,7 +10,7 @@ import {
   saveConfig,
   secretPaths,
 } from "../src/config.js";
-import { fixture } from "../../test/helpers.js";
+import { fixture } from "../../core/test/helpers.js";
 
 test("configuration commits credentials atomically with private permissions", async (t) => {
   const { home, binary } = await fixture(t);

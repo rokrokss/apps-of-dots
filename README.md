@@ -6,7 +6,7 @@ Self-hosted MCP integrations with a consistent command line. Secure MCP Tunnel c
 OpenAI clients to your local MCP without a public server.
 
 [Discord guide](discord/README.md) · [Telegram guide](telegram/README.md) ·
-[WhatsApp guide](whatsapp/README.md) · [Architecture](docs/architecture.md) ·
+[WhatsApp guide](whatsapp/README.md) · [Architecture](core/docs/architecture.md) ·
 [Contributing](CONTRIBUTING.md)
 
 English is the primary language of this project. Translation: [한국어](README.ko.md).

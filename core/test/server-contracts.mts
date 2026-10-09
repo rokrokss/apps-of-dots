@@ -11,8 +11,8 @@ import {
   sourcePaths,
   childEnvironment,
 } from "../packages/managed-mcp/src/index.js";
-import { SOURCE as telegram, TOOL_COUNT as telegramCount } from "../telegram/src/server.js";
-import { SOURCE as whatsapp, TOOL_COUNT as whatsappCount } from "../whatsapp/src/server.js";
+import { SOURCE as telegram, TOOL_COUNT as telegramCount } from "../../telegram/src/server.js";
+import { SOURCE as whatsapp, TOOL_COUNT as whatsappCount } from "../../whatsapp/src/server.js";
 
 const home = await mkdtemp(join(tmpdir(), "apps-of-dots-contracts-"));
 const exec = promisify(execFile);

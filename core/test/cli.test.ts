@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { fixture } from "./helpers.js";
 
 const exec = promisify(execFile);
-const cli = fileURLToPath(new URL("../dist/cli.js", import.meta.url));
+const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
 test("CLI name, catalog and help describe the implemented scope", async () => {
   const { stdout } = await exec(process.execPath, [cli, "--help"]);

@@ -6,14 +6,14 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fixture } from "./helpers.js";
-import { saveConfig as saveDiscord } from "../discord/src/config.js";
+import { saveConfig as saveDiscord } from "../../discord/src/config.js";
 import { saveConfig } from "../packages/managed-mcp/src/config.js";
 import { fakeInstallation } from "../packages/managed-mcp/test/helpers.js";
-import { SOURCE as telegram } from "../telegram/src/server.js";
-import { SOURCE as whatsapp } from "../whatsapp/src/server.js";
+import { SOURCE as telegram } from "../../telegram/src/server.js";
+import { SOURCE as whatsapp } from "../../whatsapp/src/server.js";
 
 const exec = promisify(execFile);
-const cli = fileURLToPath(new URL("../dist/cli.js", import.meta.url));
+const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
 
 for (const app of ["discord", "telegram", "whatsapp"] as const) {
   test(

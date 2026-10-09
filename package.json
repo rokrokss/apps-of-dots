@@ -13,12 +13,12 @@
     "apps-of-dots": "dist/cli.js"
   },
   "scripts": {
-    "build": "pnpm -r build && tsc -p tsconfig.json && node scripts/copy-ui.mjs",
+    "build": "pnpm -r build && tsc -p tsconfig.json && node core/scripts/copy-ui.mjs",
     "apps-of-dots": "node dist/cli.js",
-    "dev": "tsx src/cli.ts",
-    "test": "pnpm build && node --import tsx --test test/*.test.ts discord/test/*.test.ts discord/server/test/*.test.ts telegram/test/*.test.ts whatsapp/test/*.test.ts packages/runtime/test/*.test.ts packages/managed-mcp/test/*.test.ts",
+    "dev": "tsx core/src/cli.ts",
+    "test": "pnpm build && node --import tsx --test core/test/*.test.ts discord/test/*.test.ts discord/server/test/*.test.ts telegram/test/*.test.ts whatsapp/test/*.test.ts core/packages/runtime/test/*.test.ts core/packages/managed-mcp/test/*.test.ts",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json --noEmit",
-    "test:servers": "pnpm build && node --import tsx test/server-contracts.mts",
+    "test:servers": "pnpm build && node --import tsx core/test/server-contracts.mts",
     "format": "prettier --write .",
     "check": "prettier --check . && pnpm typecheck"
   },

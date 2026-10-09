@@ -30,9 +30,9 @@ supplementary; keep them consistent with the English source when updating them.
 ## Add an integration
 
 1. Put app-specific code and a README in a top-level directory, following `discord/`. Keep domain
-   dependencies out of `packages/runtime/`.
-2. Add its workspace in `pnpm-workspace.yaml`, register commands in `src/cli.ts`, and add metadata
-   to `src/catalog.ts`.
+   dependencies out of `core/packages/runtime/`.
+2. Add its workspace in `pnpm-workspace.yaml`, register commands in `core/src/cli.ts`, and add
+   metadata to `core/src/catalog.ts`.
 3. Reuse common command names: `setup`, `start`, `stop`, `restart`, `status`, `logs`, and `doctor`.
    Provide JSON output for automation.
 4. Test the real MCP boundary, private configuration, and recovery paths. Never contact live

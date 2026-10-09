@@ -3,7 +3,7 @@ packages:
   - discord/server
   - telegram
   - whatsapp
-  - packages/*
+  - core/packages/*
 
 minimumReleaseAge: 1440
 onlyBuiltDependencies:
