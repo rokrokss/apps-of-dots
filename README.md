@@ -1,15 +1,32 @@
-# apps-of-dots
+<div align="center">
+  <img src="brand/out/banner-1400x560.png" alt="apps of dots: your apps, connected to your dot" width="100%" />
+  <h1>apps of dots</h1>
+  <p>Bring your apps to your OpenAI dot.</p>
+  <p>
+    <b>Self-hosted MCP for Discord, Telegram and WhatsApp, connected through your own Secure MCP
+    Tunnel. No public server needed.</b>
+  </p>
+  <p>
+    <a href="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml/badge.svg" /></a>
+    <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-245d47" /></a>
+    <img alt="Node.js 24+" src="https://img.shields.io/badge/node-24%2B-6e8c64" />
+    <img alt="macOS and Linux" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-8aa77e" />
+  </p>
+  <p>
+    <a href="#installation">Install</a> · <a href="#local-setup-center">Setup center</a> ·
+    <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
+    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a> ·
+    <a href="CONTRIBUTING.md">Contributing</a>
+  </p>
+  <p>English is the primary language of this project. Translation: <a href="README.ko.md">한국어</a></p>
+</div>
 
-Bring your apps to your OpenAI dot.
+## Intro
 
-Self-hosted MCP integrations with a consistent command line. Secure MCP Tunnel connects supported
-OpenAI clients to your local MCP without a public server.
-
-[Discord guide](discord/README.md) · [Telegram guide](telegram/README.md) ·
-[WhatsApp guide](whatsapp/README.md) · [Architecture](core/docs/architecture.md) ·
-[Contributing](CONTRIBUTING.md)
-
-English is the primary language of this project. Translation: [한국어](README.ko.md).
+[dots](https://openai.com/index/introducing-dots/) are OpenAI's always-on agents in ChatGPT, and
+they reach your apps through plugins. apps of dots adds the apps you run yourself: each integration
+is a local MCP server on your computer, and Secure MCP Tunnel connects supported OpenAI clients to
+it without a public server. One command line and one local setup page manage them all.
 
 | Integration          | Location                                                                             | What it provides                                                        |
 | -------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
@@ -22,6 +39,17 @@ English is the primary language of this project. Translation: [한국어](README
 Discord includes messaging, channels, members, roles, moderation, forums, webhooks, scheduled-event
 management, invitations, and DMs. It does **not** implement MCP Events. Discord scheduled-event
 tools remain available.
+
+## How it works
+
+<p align="center">
+  <img src="brand/out/how-it-works.png" alt="Your app account, apps of dots on your computer, Secure MCP Tunnel, then your dot in ChatGPT" width="100%" />
+</p>
+
+Your credentials and account sessions stay in a private data directory on your computer. The
+official tunnel-client opens an outbound connection to OpenAI, and you add that tunnel to ChatGPT as
+a custom MCP server. See the [architecture](core/docs/architecture.md) for process and credential
+details.
 
 ## Installation
 
@@ -83,11 +111,20 @@ After [installation](#installation), run:
 pnpm apps-of-dots ui
 ```
 
+<p align="center">
+  <img src="brand/out/setup-center.png" alt="The local setup center overview with Discord, Telegram, and WhatsApp" width="100%" />
+</p>
+
 The local setup center guides Discord, Telegram, and WhatsApp account and tunnel configuration, live
 status, start/stop controls, and adding the app to ChatGPT. Telegram and WhatsApp show QR codes here
 to scan with your phone, refresh expired codes, and start the tunnel after account approval.
 Telegram may request its two-step password; it is used only for that login and is not saved. You can
 cancel login or return to it after refreshing the page.
+
+<p align="center">
+  <img src="brand/out/telegram-login.png" alt="Signing in to Telegram with a QR code" width="49%" />
+  <img src="brand/out/discord-ready.png" alt="A ready Discord tunnel and the steps to add it to ChatGPT" width="49%" />
+</p>
 
 Existing CLI settings are reused; leave credential fields blank to keep saved keys. Stop a running
 tunnel before editing its settings or signing in again. Each app needs its own tunnel ID. The CLI
@@ -201,6 +238,8 @@ pnpm check      # Formatting and TypeScript
 pnpm audit --prod
 ```
 
+## Credits and license
+
 Built on [PaSympa/discord-mcp](https://github.com/PaSympa/discord-mcp), inspired by
 [PR #151](https://github.com/PaSympa/discord-mcp/pull/151) and the
 [KakaoTalk Bridge CLI](https://github.com/rokrokss/kakaotalk-bridge). See
@@ -210,6 +249,10 @@ The local Telegram implementation derives from
 [chigwell/telegram-mcp](https://github.com/chigwell/telegram-mcp); WhatsApp derives from
 [verygoodplugins/whatsapp-mcp](https://github.com/verygoodplugins/whatsapp-mcp). See
 [Telegram](telegram/UPSTREAM.md) and [WhatsApp](whatsapp/UPSTREAM.md) source provenance.
+
+README images are rendered from [`brand/`](brand/) with `brand/render.sh`. The dots artwork in them
+is OpenAI's, from the [dots announcement](https://openai.com/index/introducing-dots/), and is not
+covered by this repository's license. The setup center screenshots show example connection states.
 
 MIT licensed, with imported Telegram source under Apache-2.0. An independent community project, not
 an official product of OpenAI or the connected apps.

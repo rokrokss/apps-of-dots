@@ -1,0 +1,237 @@
+/* Shared design system for README and GitHub images.
+   Tokens mirror the local setup center (core/src/ui/public/style.css).
+   Rendered by brand/render.sh with headless Chrome at exact pixel sizes. */
+
+:root {
+  --bg: #f6f7f4;
+  --ink: #25332c;
+  --green: #245d47;
+  --green-2: #2c5b43;
+  --sage: #6e8c64;
+  --sage-2: #63956e;
+  --muted: #748078;
+  --faint: #939c91;
+  --line: #e1e6de;
+  --soft: #edf2e9;
+  --paper: #fff;
+  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --serif: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  background: var(--bg);
+}
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.canvas {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg);
+  /* the dots in "apps of dots" */
+  background-image: radial-gradient(#dde4d6 1.3px, transparent 1.4px);
+  background-size: 24px 24px;
+  background-position: 12px 12px;
+}
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #e3ebdb 0%, #f6f7f400 68%);
+  pointer-events: none;
+}
+
+/* ---------- brand ---------- */
+.brand {
+  display: flex;
+  align-items: center;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  --dot: 11px;
+  font-size: 30px;
+}
+.brand-period {
+  color: var(--sage-2);
+}
+.brand-mark {
+  display: grid;
+  grid-template-columns: repeat(2, var(--dot));
+  gap: calc(var(--dot) * 0.43);
+  margin-right: calc(var(--dot) * 1.6);
+  transform: rotate(-10deg);
+}
+.brand-mark i {
+  width: var(--dot);
+  height: var(--dot);
+  background: #2e6048;
+  border-radius: 50%;
+}
+.brand-mark i:last-child {
+  background: #aac291;
+}
+
+/* ---------- type ---------- */
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.17em;
+  color: #83907f;
+}
+.headline {
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+}
+.headline em {
+  font-style: normal;
+  color: var(--sage);
+}
+.sub {
+  color: #7c857a;
+  line-height: 1.65;
+}
+
+/* ---------- app tiles (letters, as in the setup center) ---------- */
+.tile {
+  display: grid;
+  place-items: center;
+  font-weight: 650;
+  border-radius: 30%;
+  width: 56px;
+  height: 56px;
+  font-size: 25px;
+}
+.discord {
+  background: #e8e4f8;
+  color: #786db4;
+}
+.telegram {
+  background: #e2eff6;
+  color: #5797b5;
+}
+.whatsapp {
+  background: #e4eedf;
+  color: #759d69;
+}
+.kakao {
+  background: #f4ebc1;
+  color: #807747;
+}
+.recly {
+  background: #e9e4dc;
+  color: #8f7f6c;
+}
+
+/* ---------- the dot core ---------- */
+.core {
+  display: grid;
+  grid-template-columns: repeat(2, var(--d));
+  gap: calc(var(--d) * 0.5);
+  place-content: center;
+  --d: 16px;
+  width: 104px;
+  height: 104px;
+  border: 1px solid #d5e0cd;
+  border-radius: 34px;
+  background: #f9fbf6;
+  box-shadow: 0 14px 34px #d3ddcf99;
+}
+.core i {
+  width: var(--d);
+  height: var(--d);
+  background: #51734c;
+  border-radius: 50%;
+}
+.core i:last-child {
+  background: #abc296;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #638759;
+  background: #edf5e9;
+  border: 1px solid #dfeada;
+  border-radius: 30px;
+  padding: 7px 13px;
+  white-space: nowrap;
+}
+.pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #719354;
+}
+
+/* ---------- product window ---------- */
+.window {
+  position: absolute;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid #d9e0d3;
+  border-radius: 14px;
+  box-shadow:
+    0 40px 80px -30px #3c50402e,
+    0 14px 30px -14px #3c504026;
+}
+.window-bar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: #fbfcf9;
+  border-bottom: 1px solid var(--line);
+}
+.window-bar i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #dfe5da;
+}
+.window-bar span {
+  margin: 0 auto;
+  font-size: 12px;
+  color: #8a9488;
+  background: #f1f4ee;
+  border-radius: 6px;
+  padding: 5px 60px;
+  transform: translateX(-28px);
+}
+.window iframe {
+  display: block;
+  border: 0;
+  transform-origin: 0 0;
+}
+
+/* product shot: a 1440x900 setup center page at 0.85 in a 1400x900 canvas */
+.shot {
+  width: 1400px;
+  height: 900px;
+}
+.shot .window {
+  left: 87px;
+  top: 46px;
+  width: 1226px;
+  height: 807px;
+}
+.shot iframe {
+  width: 1440px;
+  height: 900px;
+  transform: scale(0.85);
+}

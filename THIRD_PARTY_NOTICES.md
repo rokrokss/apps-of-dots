@@ -24,6 +24,10 @@ See [Discord provenance](discord/UPSTREAM.md), [Telegram provenance](telegram/UP
 [WhatsApp provenance](whatsapp/UPSTREAM.md). Installers build local code without fetching those MCP
 repositories or packages.
 
+The README images in [`brand/`](brand/) include dots artwork from OpenAI's
+[dots announcement](https://openai.com/index/introducing-dots/) (`brand/src/dots/`). That artwork
+belongs to OpenAI and is not covered by this repository's licenses.
+
 ## PaSympa/discord-mcp
 
 MIT License

@@ -1,0 +1,91 @@
+<!doctype html>
+<!-- Static copy of the setup center Telegram QR sign-in step (core/src/ui/public/index.html). -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light" />
+    <link rel="stylesheet" href="../../../core/src/ui/public/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <button class="brand">
+        <span class="brand-mark"><i></i><i></i><i></i><i></i></span>apps of dots<span
+          class="brand-period"
+          >.</span
+        >
+      </button>
+      <div class="sidebar-label">YOUR WORKSPACE</div>
+      <nav>
+        <button class="nav-item"><span>⊞</span>Overview</button>
+        <div class="nav-divider"></div>
+        <button class="nav-item">
+          <span class="nav-icon discord">D</span>Discord<span class="nav-status ready"></span>
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon telegram">↗</span>Telegram<span class="nav-status"></span>
+        </button>
+        <button class="nav-item">
+          <span class="nav-icon whatsapp">W</span>WhatsApp<span class="nav-status"></span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="local-light"></span> Running on your computer
+        <p>Your apps, your credentials,<br />your connection.</p>
+        <a>Project & documentation ↗</a>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span>SETUP CENTER</span>
+        <div>
+          <span class="local-badge"><i></i> Local workspace</span
+          ><button class="icon-button">↻</button>
+        </div>
+      </header>
+      <main>
+        <section>
+          <button class="back-link">← All apps</button>
+          <div class="detail-heading">
+            <div class="app-icon telegram">↗</div>
+            <div>
+              <p class="eyebrow">YOUR CONNECTION</p>
+              <h1>Telegram</h1>
+            </div>
+            <span class="badge warning">Sign-in needed</span>
+          </div>
+          <p class="intro" style="margin: 19px 0 25px">
+            Your conversations and contacts, connected through your own account.
+          </p>
+          <ol class="steps">
+            <li class="done"><span>1</span>Connect app</li>
+            <li class="done"><span>2</span>Private tunnel</li>
+            <li class="active"><span>3</span>Check connection</li>
+            <li><span>4</span>Use with AI</li>
+          </ol>
+          <section class="panel">
+            <div class="progress-symbol">↻</div>
+            <p class="eyebrow">STEP 03 / CONNECTION CHECK</p>
+            <h2>Connecting the dots.</h2>
+            <p class="panel-intro">
+              Scan the QR code with the app on your phone. New codes appear here automatically.
+            </p>
+            <div class="qr-panel">
+              <img src="qr.svg" alt="" width="280" height="280" />
+              <div>
+                <p class="eyebrow">ON YOUR PHONE</p>
+                <h3>Open Telegram on your phone</h3>
+                <p>
+                  Go to Settings → Devices → Link Desktop Device. Scan this code and approve the
+                  login.
+                </p>
+                <p class="field-help">Refreshes in about 24s</p>
+                <p class="field-help">Only the latest code works. Keep this code private.</p>
+              </div>
+            </div>
+            <button class="text-button">Cancel login</button>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,9 +1,31 @@
-# apps-of-dots
+<div align="center">
+  <img src="brand/out/banner-1400x560.png" alt="apps of dots: 내 앱을 내 dot에 연결" width="100%" />
+  <h1>apps of dots</h1>
+  <p>내 앱을 OpenAI dot에 연결하는 셀프 호스팅 MCP 모음입니다.</p>
+  <p>
+    <b>Discord·Telegram·WhatsApp MCP를 내 컴퓨터에서 실행하고, 나만의 Secure MCP Tunnel로
+    연결합니다. 공개 서버가 필요 없습니다.</b>
+  </p>
+  <p>
+    <a href="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml/badge.svg" /></a>
+    <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-245d47" /></a>
+    <img alt="Node.js 24+" src="https://img.shields.io/badge/node-24%2B-6e8c64" />
+    <img alt="macOS and Linux" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-8aa77e" />
+  </p>
+  <p>
+    <a href="#설치">설치</a> · <a href="#웹에서-설정하기">웹 설정</a> ·
+    <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
+    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a>
+  </p>
+  <p><a href="README.md">English</a> · 한국어</p>
+</div>
 
-내 앱을 OpenAI dot에 연결하는 셀프 호스팅 MCP 모음입니다.
+## 소개
 
-[English](README.md) · [Discord](discord/README.md) · [Telegram](telegram/README.md) ·
-[WhatsApp](whatsapp/README.md)
+[dots](https://openai.com/ko-KR/index/introducing-dots/)는 ChatGPT에서 상시 작동하는 OpenAI의
+에이전트이며, 플러그인을 통해 여러 앱에 연결됩니다. apps of dots는 직접 실행하는 앱을 여기에
+더합니다. 각 앱은 내 컴퓨터의 로컬 MCP 서버로 실행되고, Secure MCP Tunnel이 공개 서버 없이 지원되는
+OpenAI 클라이언트와 연결합니다. 하나의 명령줄과 로컬 설정 화면으로 모두 관리합니다.
 
 프로젝트의 기본 언어는 영어입니다. 이 문서는 보조 번역이며, 최신 기준은
 [영문 README](README.md)입니다.
@@ -18,6 +40,16 @@
 
 Discord는 메시지, 채널, 멤버, 역할, 관리, 포럼, 웹훅, 예약 이벤트, 초대, DM 도구를 모두 제공합니다.
 Discord **MCP Events는 구현하지 않습니다**. Discord의 예약 이벤트 관리 도구는 포함됩니다.
+
+## 동작 방식
+
+<p align="center">
+  <img src="brand/out/how-it-works.png" alt="앱 계정, 내 컴퓨터의 apps of dots, Secure MCP Tunnel, ChatGPT의 내 dot 순서로 연결" width="100%" />
+</p>
+
+계정 정보와 세션은 내 컴퓨터의 비공개 데이터 폴더에 남습니다. 공식 tunnel-client가 OpenAI로 나가는
+연결을 열고, 그 터널을 ChatGPT에 사용자 지정 MCP 서버로 추가합니다. 프로세스와 인증 정보 처리는
+[아키텍처 문서](core/docs/architecture.md)를 참고하세요.
 
 ## 설치
 
@@ -79,10 +111,19 @@ brew install node pnpm uv go openai/tools/tunnel-client
 pnpm apps-of-dots ui
 ```
 
+<p align="center">
+  <img src="brand/out/setup-center.png" alt="Discord, Telegram, WhatsApp이 표시된 로컬 설정 화면" width="100%" />
+</p>
+
 Discord·Telegram·WhatsApp의 계정·터널 설정부터 상태 확인·시작·중지·ChatGPT에 추가하는 방법까지
 화면에서 안내합니다. Telegram·WhatsApp은 웹에 표시된 QR을 휴대폰으로 스캔하고 승인하면 터널이
 시작됩니다. QR은 자동 갱신되며 로그인 취소와 새로고침 후 이어하기도 가능합니다. Telegram의 2단계
 비밀번호는 필요한 경우에만 입력하며 해당 로그인에만 사용하고 저장하지 않습니다.
+
+<p align="center">
+  <img src="brand/out/telegram-login.png" alt="QR 코드로 Telegram 로그인" width="49%" />
+  <img src="brand/out/discord-ready.png" alt="준비된 Discord 터널과 ChatGPT에 추가하는 단계" width="49%" />
+</p>
 
 기존 CLI 설정을 재사용합니다. 저장된 키를 유지하려면 입력란을 비워 두세요. 설정을 바꾸거나 다시
 로그인하려면 먼저 해당 터널을 중지합니다. 앱마다 별도의 터널 ID를 사용하세요. CLI도 계속 사용할 수
@@ -172,3 +213,12 @@ pnpm apps-of-dots discord stop
 로그인 없이 레포 내부 Python·Go 코드를 빌드하고 원본 도구 스키마와 비교합니다. 실제 계정 인증·OpenAI
 터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Linux용 CI 설정은 포함되어 있고, Windows와 부팅
 자동 실행은 후속 범위입니다.
+
+## 이미지와 라이선스
+
+README 이미지는 [`brand/`](brand/)의 HTML을 `brand/render.sh`로 렌더링한 것입니다. 이미지 속 dots
+아트워크는 [dots 발표](https://openai.com/ko-KR/index/introducing-dots/)에 실린 OpenAI의 저작물이며
+이 레포의 라이선스 대상이 아닙니다. 설정 화면 이미지는 예시 연결 상태를 보여줍니다.
+
+MIT 라이선스이며, 가져온 Telegram 소스는 Apache-2.0을 따릅니다. 커뮤니티의 독립 프로젝트로, OpenAI나
+연결되는 앱의 공식 제품이 아닙니다.

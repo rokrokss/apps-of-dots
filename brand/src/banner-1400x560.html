@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      .canvas {
+        width: 1400px;
+        height: 560px;
+      }
+      .left {
+        position: absolute;
+        left: 92px;
+        top: 98px;
+        width: 660px;
+      }
+      .left .eyebrow {
+        margin-top: 64px;
+      }
+      .left .headline {
+        font-size: 60px;
+        margin-top: 22px;
+      }
+      .left .sub {
+        font-size: 19px;
+        margin-top: 26px;
+      }
+
+      /* the official dots art card, with the apps docked on its edge */
+      .dot-card {
+        position: absolute;
+        left: 812px;
+        top: 62px;
+        width: 506px;
+        height: 396px;
+        border-radius: 30px;
+        background: #000 url(dots/art-card.jpg) center 62% / auto 420px no-repeat;
+        box-shadow:
+          0 40px 80px -30px #24332c66,
+          0 14px 30px -14px #24332c4d;
+      }
+      .dock {
+        position: absolute;
+        left: 772px;
+        top: 94px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .dock .tile {
+        border: 6px solid var(--bg);
+        box-sizing: content-box;
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+      }
+      .dock .tile:nth-child(odd) {
+        transform: rotate(-8deg);
+      }
+      .dock .tile:nth-child(even) {
+        transform: rotate(7deg) translateX(-10px);
+      }
+      .label {
+        position: absolute;
+        left: 812px;
+        width: 506px;
+        top: 484px;
+        text-align: center;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 17px;
+        color: #9aa791;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="glow" style="left: 740px; top: -80px; width: 700px; height: 700px"></div>
+      <div class="left">
+        <div class="brand">
+          <span class="brand-mark"><i></i><i></i><i></i><i></i></span>apps of dots<span
+            class="brand-period"
+            >.</span
+          >
+        </div>
+        <p class="eyebrow">A LITTLE SETUP. A LOT MORE POSSIBLE.</p>
+        <h1 class="headline">Your apps.<br /><em>Connected to your dot.</em></h1>
+        <p class="sub">
+          Self-hosted MCP for Discord, Telegram and WhatsApp,<br />connected to your dot through
+          your own private tunnel.
+        </p>
+      </div>
+      <div class="dot-card"></div>
+      <div class="dock">
+        <span class="tile discord">D</span><span class="tile telegram">↗</span
+        ><span class="tile whatsapp">W</span><span class="tile kakao">K</span
+        ><span class="tile recly">R</span>
+      </div>
+      <p class="label">your apps, plugged into your dot</p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      .canvas {
+        width: 1280px;
+        height: 640px;
+      }
+      .left {
+        position: absolute;
+        left: 80px;
+        top: 96px;
+        width: 600px;
+      }
+      .brand {
+        font-size: 40px;
+        --dot: 15px;
+      }
+      .headline {
+        font-size: 54px;
+        margin-top: 46px;
+      }
+      .apps {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 40px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 550;
+      }
+      .chip .tile {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+        border-radius: 10px;
+      }
+      .chip span {
+        color: var(--faint);
+        font-weight: 400;
+      }
+      .dot-card {
+        position: absolute;
+        left: 716px;
+        top: 70px;
+        width: 484px;
+        height: 460px;
+        border-radius: 34px;
+        background: #000 url(dots/art-card.jpg) center 64% / auto 470px no-repeat;
+        box-shadow:
+          0 40px 80px -30px #24332c66,
+          0 14px 30px -14px #24332c4d;
+      }
+      .url {
+        position: absolute;
+        left: 716px;
+        width: 484px;
+        top: 560px;
+        text-align: center;
+        font-size: 15px;
+        letter-spacing: 0.04em;
+        color: #8d988a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="glow" style="left: 640px; top: -60px; width: 700px; height: 760px"></div>
+      <div class="left">
+        <div class="brand">
+          <span class="brand-mark"><i></i><i></i><i></i><i></i></span>apps of dots<span
+            class="brand-period"
+            >.</span
+          >
+        </div>
+        <p class="headline">Your apps.<br /><em>Connected to your dot.</em></p>
+        <div class="apps">
+          <div class="chip"><span class="tile discord">D</span>Discord<span>99 tools</span></div>
+          <div class="chip"><span class="tile telegram">↗</span>Telegram<span>139 tools</span></div>
+          <div class="chip"><span class="tile whatsapp">W</span>WhatsApp<span>17 tools</span></div>
+        </div>
+      </div>
+      <div class="dot-card"></div>
+      <p class="url">github.com/rokrokss/apps-of-dots</p>
+    </div>
+  </body>
+</html>

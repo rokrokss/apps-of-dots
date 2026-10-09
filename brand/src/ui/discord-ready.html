@@ -1,0 +1,107 @@
+<!doctype html>
+<!-- Static copy of the setup center "Use with AI" step for a ready Discord tunnel (core/src/ui/public/index.html). -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light" />
+    <link rel="stylesheet" href="../../../core/src/ui/public/style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <button class="brand">
+        <span class="brand-mark"><i></i><i></i><i></i><i></i></span>apps of dots<span
+          class="brand-period"
+          >.</span
+        >
+      </button>
+      <div class="sidebar-label">YOUR WORKSPACE</div>
+      <nav>
+        <button class="nav-item"><span>⊞</span>Overview</button>
+        <div class="nav-divider"></div>
+        <button class="nav-item active">
+          <span class="nav-icon discord">D</span>Discord<span class="nav-status ready"></span>
+        </button>
+        <button class="nav-item">
+          <span class="nav-icon telegram">↗</span>Telegram<span class="nav-status ready"></span>
+        </button>
+        <button class="nav-item">
+          <span class="nav-icon whatsapp">W</span>WhatsApp<span class="nav-status"></span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="local-light"></span> Running on your computer
+        <p>Your apps, your credentials,<br />your connection.</p>
+        <a>Project & documentation ↗</a>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <span>SETUP CENTER</span>
+        <div>
+          <span class="local-badge"><i></i> Local workspace</span
+          ><button class="icon-button">↻</button>
+        </div>
+      </header>
+      <main>
+        <section>
+          <button class="back-link">← All apps</button>
+          <div class="detail-heading">
+            <div class="app-icon discord">D</div>
+            <div>
+              <p class="eyebrow">YOUR CONNECTION</p>
+              <h1>Discord</h1>
+            </div>
+            <span class="badge ready">Tunnel ready</span>
+          </div>
+          <p class="intro" style="margin: 19px 0 25px">
+            Servers, channels, and conversations. All within reach of your dot.
+          </p>
+          <ol class="steps">
+            <li class="done"><span>1</span>Connect app</li>
+            <li class="done"><span>2</span>Private tunnel</li>
+            <li class="done"><span>3</span>Check connection</li>
+            <li class="active"><span>4</span>Use with AI</li>
+          </ol>
+          <div class="connection-strip">
+            <span class="runtime-dot ready"></span>
+            <div>
+              <strong>Your private tunnel is ready</strong>
+              <p>MCP is available through this tunnel. You can close this page.</p>
+            </div>
+            <div class="runtime-actions">
+              <button class="secondary">Stop tunnel</button
+              ><button class="text-button" disabled>Edit settings</button>
+            </div>
+          </div>
+          <div class="panel">
+            <p class="eyebrow">STEP 04 / USE WITH AI</p>
+            <h2>One last connection.</h2>
+            <p class="panel-intro">Your tunnel is ready. Now add Discord to ChatGPT.</p>
+            <div class="copy-row tunnel-copy">
+              <div>
+                <span class="eyebrow">YOUR DISCORD TUNNEL</span><code>tunnel_example_discord</code>
+              </div>
+              <button class="secondary">Copy ID</button>
+            </div>
+            <ol class="finish-steps">
+              <li>
+                Open <a>ChatGPT Plugins ↗</a>, then choose
+                <strong>+ → Add custom MCP server</strong>.
+              </li>
+              <li>
+                Choose <strong>Tunnel</strong> and select or paste the ID above. For this private
+                connection, use <strong>No authentication</strong>.
+              </li>
+              <li>Create and install the plugin, then select it in a chat.</li>
+            </ol>
+            <div class="try-prompt">
+              <span class="eyebrow">TRY YOUR FIRST QUESTION</span>
+              <p>“Show me my Discord servers and their channels.”</p>
+              <button class="text-button">Copy question ↗</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

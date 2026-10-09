@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      .canvas {
+        width: 1400px;
+        height: 460px;
+        padding: 58px 84px 0;
+      }
+      .canvas > .eyebrow {
+        text-align: center;
+      }
+      .flow {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 36px;
+        margin-top: 50px;
+      }
+      /* dotted path that ties the four stops together */
+      .flow::before {
+        content: "";
+        position: absolute;
+        left: 12%;
+        right: 12%;
+        top: 70px;
+        border-top: 2px dashed #c6d5bc;
+      }
+      .stop {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .visual {
+        height: 140px;
+        display: grid;
+        place-items: center;
+      }
+      .apps {
+        display: grid;
+        grid-template-columns: repeat(2, 56px);
+        gap: 10px;
+        transform: rotate(-6deg);
+      }
+      .apps .tile {
+        border: 5px solid var(--bg);
+        box-sizing: content-box;
+      }
+      .apps .tile:nth-child(3) {
+        grid-column: span 2;
+        justify-self: center;
+      }
+      .tunnel {
+        width: 150px;
+        height: 64px;
+        border-radius: 32px;
+        background: var(--paper);
+        border: 1px solid #d5e0cd;
+        box-shadow: 0 14px 34px #d3ddcf99;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+      }
+      .tunnel i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #c3d3b7;
+      }
+      .tunnel i:nth-child(2) {
+        background: #93ae84;
+      }
+      .tunnel i:nth-child(3) {
+        background: #51734c;
+      }
+      .tunnel b {
+        font-size: 22px;
+        color: #51734c;
+        margin-left: 4px;
+      }
+      .dot {
+        width: 220px;
+        height: 132px;
+        border-radius: 22px;
+        background: #000 url(dots/art-card.jpg) center 62% / auto 148px no-repeat;
+        box-shadow: 0 14px 34px #3c50403d;
+        transform: rotate(3deg);
+      }
+      .num {
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 13px;
+        color: #98ab8c;
+        margin-top: 28px;
+      }
+      h3 {
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-top: 10px;
+      }
+      .stop p.sub {
+        font-size: 15px;
+        margin-top: 10px;
+        max-width: 250px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <p class="eyebrow">FROM YOUR APP TO YOUR AI</p>
+      <div class="flow">
+        <div class="stop">
+          <div class="visual">
+            <div class="apps">
+              <span class="tile discord">D</span><span class="tile telegram">↗</span
+              ><span class="tile whatsapp">W</span>
+            </div>
+          </div>
+          <span class="num">01</span>
+          <h3>Your app account</h3>
+          <p class="sub">A Discord bot, or your own Telegram and WhatsApp via QR code.</p>
+        </div>
+        <div class="stop">
+          <div class="visual">
+            <span class="core"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <span class="num">02</span>
+          <h3>apps of dots</h3>
+          <p class="sub">MCP servers run on your computer. Keys stay in a private data folder.</p>
+        </div>
+        <div class="stop">
+          <div class="visual">
+            <span class="tunnel"><i></i><i></i><i></i><b>→</b></span>
+          </div>
+          <span class="num">03</span>
+          <h3>Secure MCP Tunnel</h3>
+          <p class="sub">The official tunnel client connects outbound. No public server.</p>
+        </div>
+        <div class="stop">
+          <div class="visual">
+            <div class="dot"></div>
+          </div>
+          <span class="num">04</span>
+          <h3>Your dot</h3>
+          <p class="sub">Add the tunnel as a custom MCP server in ChatGPT and just ask.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
