@@ -4,7 +4,8 @@
   <p>내 앱을 OpenAI dot에 연결하는 셀프 호스팅 MCP 모음입니다.</p>
   <p>
     <b>Discord·Telegram·WhatsApp MCP를 내 컴퓨터에서 실행하고, 나만의 Secure MCP Tunnel로
-    연결합니다. 공개 서버가 필요 없습니다.</b>
+    연결합니다.</b><br />
+    나가는 연결만 사용합니다. 공개 서버도, 포트 개방도, ngrok이나 Tailscale Funnel도 필요 없습니다.
   </p>
   <p>
     <a href="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml/badge.svg" /></a>
@@ -15,9 +16,9 @@
   <p>
     <a href="#설치">설치</a> · <a href="#웹에서-설정하기">웹 설정</a> ·
     <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
-    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a>
+    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a> ·
+    <a href="README.md">English</a>
   </p>
-  <p><a href="README.md">English</a> · 한국어</p>
 </div>
 
 ## 소개
@@ -26,9 +27,6 @@
 에이전트이며, 플러그인을 통해 여러 앱에 연결됩니다. apps of dots는 직접 실행하는 앱을 여기에
 더합니다. 각 앱은 내 컴퓨터의 로컬 MCP 서버로 실행되고, Secure MCP Tunnel이 공개 서버 없이 지원되는
 OpenAI 클라이언트와 연결합니다. 하나의 명령줄과 로컬 설정 화면으로 모두 관리합니다.
-
-프로젝트의 기본 언어는 영어입니다. 이 문서는 보조 번역이며, 최신 기준은
-[영문 README](README.md)입니다.
 
 | 앱        | 제공 방식                                                                                   |
 | --------- | ------------------------------------------------------------------------------------------- |
@@ -47,9 +45,11 @@ Discord **MCP Events는 구현하지 않습니다**. Discord의 예약 이벤트
   <img src="brand/out/how-it-works.png" alt="앱 계정, 내 컴퓨터의 apps of dots, Secure MCP Tunnel, ChatGPT의 내 dot 순서로 연결" width="100%" />
 </p>
 
-계정 정보와 세션은 내 컴퓨터의 비공개 데이터 폴더에 남습니다. 공식 tunnel-client가 OpenAI로 나가는
-연결을 열고, 그 터널을 ChatGPT에 사용자 지정 MCP 서버로 추가합니다. 프로세스와 인증 정보 처리는
-[아키텍처 문서](core/docs/architecture.md)를 참고하세요.
+계정 정보와 세션은 내 컴퓨터의 비공개 데이터 폴더에 남습니다. 공식 tunnel-client는 OpenAI로 나가는
+HTTPS 연결만 만들기 때문에 포트 개방이나 포트 포워딩, 리버스 프록시가 필요 없고 ngrok·Cloudflare
+Tunnel·Tailscale Funnel로 외부에 노출할 것도 없습니다. apps of dots가 실행하는 어떤 것도 인터넷에서
+직접 접근할 수 없습니다. 이 터널을 ChatGPT에 사용자 지정 MCP 서버로 추가하면 됩니다. 프로세스와 인증
+정보 처리는 [아키텍처 문서](core/docs/architecture.md)를 참고하세요.
 
 ## 설치
 

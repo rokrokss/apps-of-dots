@@ -4,7 +4,8 @@
   <p>Bring your apps to your OpenAI dot.</p>
   <p>
     <b>Self-hosted MCP for Discord, Telegram and WhatsApp, connected through your own Secure MCP
-    Tunnel. No public server needed.</b>
+    Tunnel.</b><br />
+    Outbound only. No public server, no open ports, no ngrok or Tailscale Funnel.
   </p>
   <p>
     <a href="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rokrokss/apps-of-dots/actions/workflows/ci.yml/badge.svg" /></a>
@@ -16,9 +17,8 @@
     <a href="#installation">Install</a> · <a href="#local-setup-center">Setup center</a> ·
     <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
     <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a> ·
-    <a href="CONTRIBUTING.md">Contributing</a>
+    <a href="CONTRIBUTING.md">Contributing</a> · <a href="README.ko.md">한국어</a>
   </p>
-  <p>English is the primary language of this project. Translation: <a href="README.ko.md">한국어</a></p>
 </div>
 
 ## Intro
@@ -47,8 +47,10 @@ tools remain available.
 </p>
 
 Your credentials and account sessions stay in a private data directory on your computer. The
-official tunnel-client opens an outbound connection to OpenAI, and you add that tunnel to ChatGPT as
-a custom MCP server. See the [architecture](core/docs/architecture.md) for process and credential
+official tunnel-client only makes an outbound HTTPS connection to OpenAI, so there is no port to
+open or forward, no reverse proxy, and nothing to expose with ngrok, Cloudflare Tunnel, or Tailscale
+Funnel. Nothing apps of dots runs is reachable from the internet. You add the tunnel to ChatGPT as a
+custom MCP server. See the [architecture](core/docs/architecture.md) for process and credential
 details.
 
 ## Installation
