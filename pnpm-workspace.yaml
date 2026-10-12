@@ -3,6 +3,7 @@ packages:
   - discord/server
   - telegram
   - whatsapp
+  - reddit/devvit
   - core/packages/*
 
 minimumReleaseAge: 1440

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "rokrokssss",
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Bridge probe: post latest Discord draft",
+        "description": "Reads the newest message in the configured Discord channel and posts it here as the app account.",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/probe"
+      }
+    ]
+  },
+  "settings": {
+    "global": {
+      "discordBotToken": {
+        "type": "string",
+        "label": "Discord bot token",
+        "isSecret": true
+      }
+    },
+    "subreddit": {
+      "discordChannelId": {
+        "type": "string",
+        "label": "Discord channel ID to read drafts from",
+        "defaultValue": ""
+      },
+      "allowedAuthorId": {
+        "type": "string",
+        "label": "Only accept drafts from this Discord user ID (optional)",
+        "defaultValue": ""
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "permissions": {
+    "reddit": true,
+    "http": {
+      "enable": true,
+      "domains": ["discord.com"]
+    }
+  },
+  "dev": {
+    "subreddit": "rokrokssss_dev"
+  }
+}

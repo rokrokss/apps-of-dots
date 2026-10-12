@@ -1,0 +1,20 @@
+{
+  "name": "@apps-of-dots/reddit-devvit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Devvit app probe for the Discord to Reddit bridge",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@devvit/start": "0.14.7",
+    "@devvit/web": "0.14.7",
+    "@hono/node-server": "2.1.4",
+    "devvit": "0.14.7",
+    "hono": "4.13.13",
+    "vite": "8.3.3"
+  }
+}
