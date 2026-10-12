@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { dataHome } from "@apps-of-dots/runtime";
 import { registerDiscord } from "@apps-of-dots/discord";
+import { registerReddit } from "@apps-of-dots/reddit";
 import { registerTelegram } from "@apps-of-dots/telegram";
 import { registerWhatsApp } from "@apps-of-dots/whatsapp";
 import { integrations } from "./catalog.js";
@@ -30,6 +31,7 @@ program
 registerDiscord(program, () => dataHome(program.opts<{ home?: string }>().home));
 registerTelegram(program, () => dataHome(program.opts<{ home?: string }>().home));
 registerWhatsApp(program, () => dataHome(program.opts<{ home?: string }>().home));
+registerReddit(program, () => dataHome(program.opts<{ home?: string }>().home));
 program
   .command("ui")
   .description("Open the local setup center (guided setup, QR sign-in, and tunnel controls)")

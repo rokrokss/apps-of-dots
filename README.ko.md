@@ -3,7 +3,7 @@
   <h1>apps of dots</h1>
   <p>내 앱을 OpenAI dot에 연결하는 셀프 호스팅 MCP 모음입니다.</p>
   <p>
-    <b>Discord·Telegram·WhatsApp MCP를 내 컴퓨터에서 실행하고, 나만의 Secure MCP Tunnel로
+    <b>Discord·Telegram·WhatsApp·Reddit MCP를 내 컴퓨터에서 실행하고, 나만의 Secure MCP Tunnel로
     연결합니다.</b><br />
     나가는 연결만 사용합니다. 공개 서버도, 포트 개방도, ngrok이나 Tailscale Funnel도 필요 없습니다.
   </p>
@@ -16,7 +16,8 @@
   <p>
     <a href="#설치">설치</a> · <a href="#웹에서-설정하기">웹 설정</a> ·
     <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
-    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a> ·
+    <a href="whatsapp/README.md">WhatsApp</a> · <a href="reddit/README.md">Reddit</a> ·
+    <a href="core/docs/architecture.md">Architecture</a> ·
     <a href="README.md">English</a>
   </p>
 </div>
@@ -33,6 +34,7 @@ OpenAI 클라이언트와 연결합니다. 하나의 명령줄과 로컬 설정 
 | Discord   | 이 레포에서 실행. 원본 MCP의 **99개 도구 전체**와 Secure MCP Tunnel 지원                    |
 | Telegram  | 이 레포에서 실행. chigwell/telegram-mcp의 **139개 도구**, 개인 계정·터널 지원               |
 | WhatsApp  | 이 레포에서 실행. verygoodplugins/whatsapp-mcp의 **17개 도구**, 연결된 기기·터널 지원       |
+| Reddit    | 이 레포에서 실행. 내가 운영하는 서브레딧 하나에 대한 **5개 도구**, Devvit 브리지 경유       |
 | KakaoTalk | [기존 프로젝트](https://github.com/rokrokss/kakaotalk-bridge)의 설치 가이드 사용            |
 | Recly     | [기존 Events 가이드](https://github.com/rokrokss/recly/blob/main/docs/recly-events.md) 사용 |
 

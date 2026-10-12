@@ -3,7 +3,7 @@
   <h1>apps of dots</h1>
   <p>Bring your apps to your OpenAI dot.</p>
   <p>
-    <b>Self-hosted MCP for Discord, Telegram and WhatsApp, connected through your own Secure MCP
+    <b>Self-hosted MCP for Discord, Telegram, WhatsApp and Reddit, connected through your own Secure MCP
     Tunnel.</b><br />
     Outbound only. No public server, no open ports, no ngrok or Tailscale Funnel.
   </p>
@@ -16,7 +16,8 @@
   <p>
     <a href="#installation">Install</a> · <a href="#local-setup-center">Setup center</a> ·
     <a href="discord/README.md">Discord</a> · <a href="telegram/README.md">Telegram</a> ·
-    <a href="whatsapp/README.md">WhatsApp</a> · <a href="core/docs/architecture.md">Architecture</a> ·
+    <a href="whatsapp/README.md">WhatsApp</a> · <a href="reddit/README.md">Reddit</a> ·
+    <a href="core/docs/architecture.md">Architecture</a> ·
     <a href="CONTRIBUTING.md">Contributing</a> · <a href="README.ko.md">한국어</a>
   </p>
 </div>
@@ -33,6 +34,7 @@ it without a public server. One command line and one local setup page manage the
 | **Discord**          | [Built in](discord/)                                                                 | All **99 upstream MCP tools**, through Secure MCP Tunnel or local stdio |
 | **Telegram**         | [Built in](telegram/)                                                                | All **139 upstream tools**, personal account via Telethon               |
 | **WhatsApp**         | [Built in](whatsapp/)                                                                | All **17 upstream tools**, personal linked device via whatsmeow         |
+| **Reddit**           | [Built in](reddit/)                                                                  | **5 tools** for one subreddit you moderate, through a Devvit bridge     |
 | **KakaoTalk Bridge** | [External project](https://github.com/rokrokss/kakaotalk-bridge)                     | Follow its own installation and connection guide                        |
 | **Recly Events**     | [External project](https://github.com/rokrokss/recly/blob/main/docs/recly-events.md) | Follow its own events setup guide                                       |
 

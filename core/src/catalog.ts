@@ -24,6 +24,14 @@ export const integrations = [
     guide: "whatsapp/README.md",
   },
   {
+    id: "reddit",
+    name: "Reddit",
+    kind: "built-in",
+    tools: 5,
+    events: false,
+    guide: "reddit/README.md",
+  },
+  {
     id: "kakaotalk",
     name: "KakaoTalk Bridge",
     kind: "external",

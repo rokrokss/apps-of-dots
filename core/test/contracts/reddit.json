@@ -1,0 +1,119 @@
+{
+  "source": "reddit/src/server.ts",
+  "tools": [
+    {
+      "name": "reddit_get_draft",
+      "description": "State of a request by ref: sent (not picked up yet), queued (waiting for approval or limits), posted (with url), rejected or failed (with reason), expired, or not_found among the last 300 outbox messages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$",
+            "description": "The ref returned when it was sent."
+          }
+        },
+        "required": ["ref"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reddit_list_activity",
+      "description": "New posts and comments in the bridge's subreddit, oldest first. Pass the returned cursor as after to continue. Items deleted or removed on Reddit, and items older than 30 days, are gone.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "after": {
+            "description": "Cursor from a previous call. Without it, the latest items are returned.",
+            "type": "string",
+            "pattern": "^\\d{17,20}$"
+          },
+          "limit": {
+            "default": 25,
+            "description": "At most this many messages to read.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reddit_list_drafts",
+      "description": "Recent requests and their states, newest first, from the last 300 outbox messages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "description": "Only drafts in this state.",
+            "type": "string",
+            "enum": ["sent", "queued", "posted", "rejected", "failed", "expired"]
+          },
+          "limit": {
+            "default": 20,
+            "description": "At most this many drafts.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reddit_reply",
+      "description": "Ask the bridge to comment on a post (t3_…) or reply to a comment (t1_…) in its subreddit as the app account, with the same approval as posts. Follow it with reddit_get_draft.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parent": {
+            "type": "string",
+            "pattern": "^t[13]_[a-z0-9]+$",
+            "description": "Post or comment ID."
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6000,
+            "description": "Markdown body, up to 6,000 characters."
+          },
+          "ref": {
+            "description": "Your idempotency key. A ref the bridge has seen is never posted again. Generated if omitted.",
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          }
+        },
+        "required": ["parent", "text"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reddit_submit_post",
+      "description": "Ask the bridge to publish a text post in its subreddit as the app account. In manual mode it waits for a moderator's approval in Reddit; in auto mode it is posted within the subreddit's daily cap and spacing. Returns at once; follow it with reddit_get_draft.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Post title, 1-300 characters."
+          },
+          "text": {
+            "description": "Markdown body, up to 6,000 characters.",
+            "type": "string",
+            "maxLength": 6000
+          },
+          "ref": {
+            "description": "Your idempotency key. A ref the bridge has seen is never posted again. Generated if omitted.",
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          }
+        },
+        "required": ["title"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}

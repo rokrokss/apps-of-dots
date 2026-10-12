@@ -24,6 +24,11 @@ import { telegram } from "@apps-of-dots/telegram";
 import { whatsapp } from "@apps-of-dots/whatsapp";
 import { integrations } from "../catalog.js";
 
+// Reddit is CLI-only for now; the setup center implements Discord, Telegram and WhatsApp.
+const setupCenterApps = integrations.filter(
+  (app): app is Exclude<(typeof integrations)[number], { id: "reddit" }> => app.id !== "reddit",
+);
+
 export type AppId = "discord" | "telegram" | "whatsapp";
 export interface AppView {
   id: string;
@@ -103,7 +108,7 @@ export function createSetupService(
     qr: op.job.qr && op.job.qr.expiresAt > Date.now() ? { ...op.job.qr } : undefined,
   });
 
-  async function appView(app: (typeof integrations)[number]): Promise<AppView> {
+  async function appView(app: (typeof setupCenterApps)[number]): Promise<AppView> {
     const view: AppView = { ...app, configured: false };
     if (app.kind === "external") return view;
     view.commands = [
@@ -160,7 +165,7 @@ export function createSetupService(
   async function snapshot(): Promise<Dashboard> {
     if (!pendingSnapshot) {
       pendingSnapshot = (async () => {
-        const apps = await Promise.all(integrations.map(appView));
+        const apps = await Promise.all(setupCenterApps.map(appView));
         const configs = await Promise.all([
           loadDiscordConfig(home).catch(() => undefined),
           loadConfig(home, "telegram").catch(() => undefined),

@@ -3,6 +3,7 @@ packages:
   - discord/server
   - telegram
   - whatsapp
+  - reddit
   - reddit/devvit
   - core/packages/*
 
