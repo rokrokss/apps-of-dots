@@ -27,8 +27,8 @@ export const integrations = [
     id: "reddit",
     name: "Reddit",
     kind: "built-in",
-    tools: 5,
-    events: false,
+    tools: 7,
+    events: true,
     guide: "reddit/README.md",
   },
   {

@@ -1,38 +1,37 @@
 import { randomUUID } from "node:crypto";
+import { createInterface } from "node:readline";
+import { PassThrough, type Readable, type Writable } from "node:stream";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { z } from "zod";
-import { restDiscord, type ApiMessage, type DiscordApi } from "./discord.js";
+import { restDiscord, type DiscordApi } from "./discord.js";
+import { drafts, watchDrafts } from "./drafts.js";
+import { EventHub, stateFile } from "./events.js";
+import { isModern, modernHandler } from "./modern.js";
 import { frame, MAX_TEXT, MAX_TITLE, PARENT, readMessage, REF } from "./protocol.js";
 
-// The Reddit MCP: five tools over the Discord channels of PROTOCOL.md. Nothing is stored
-// locally; every read goes to Discord, so copies the bridge deletes are gone here too.
+// The Reddit MCP: seven tools over the Discord channels of PROTOCOL.md. Reddit content is not
+// stored locally; every read goes to Discord, so copies the bridge deletes are gone here too.
+// Only the event inbox (draft states and links) is kept, by the tunnel's server.
 
 export const SERVER_VERSION = "0.1.0";
-export const TOOL_COUNT = 5;
-const SCAN_PAGES = 3;
-
+export const TOOL_COUNT = 7;
 export type Channels = { outboxChannelId: string; inboxChannelId: string; bridgeBotId: string };
-
-type Draft = {
-  ref: string;
-  state: string;
-  op?: unknown;
-  title?: unknown;
-  parent?: unknown;
-  thing?: unknown;
-  url?: unknown;
-  edited?: unknown;
-  reason?: unknown;
-  detail?: unknown;
-  requestMessageId?: string | undefined;
-};
 
 const reply = (data: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
 });
+const noEvents = {
+  isError: true,
+  content: [
+    {
+      type: "text" as const,
+      text: "MCP events are kept by the tunnel's server only (apps-of-dots reddit start).",
+    },
+  ],
+};
 
 const refField = z
   .string()
@@ -42,72 +41,11 @@ const refField = z
     "Your idempotency key. A ref the bridge has seen is never posted again. Generated if omitted.",
   );
 
-async function recentOutbox(discord: DiscordApi, channelId: string): Promise<ApiMessage[]> {
-  const messages: ApiMessage[] = [];
-  let before: string | undefined;
-  for (let page = 0; page < SCAN_PAGES; page++) {
-    const batch = await discord.messages(channelId, { limit: 100, ...(before ? { before } : {}) });
-    messages.push(...batch);
-    if (batch.length < 100) break;
-    before = batch[batch.length - 1]!.id;
-  }
-  return messages;
-}
-
-// Newest first: each ref's first status reply wins; a request with no reply yet is "sent".
-async function drafts(discord: DiscordApi, channels: Channels): Promise<Draft[]> {
-  const [me, messages] = await Promise.all([
-    discord.me(),
-    recentOutbox(discord, channels.outboxChannelId),
-  ]);
-  const requests = new Map<string, Draft>();
-  for (const message of messages) {
-    if (message.author.id !== me) continue;
-    const e = readMessage(message)?.envelope;
-    if (typeof e?.ref !== "string") continue;
-    requests.set(message.id, {
-      ref: e.ref,
-      state: "sent",
-      op: e.op,
-      ...(e.op === "post" ? { title: e.title } : { parent: e.parent }),
-      requestMessageId: message.id,
-    });
-  }
-  const statuses = new Map<string, Draft>();
-  for (const message of messages) {
-    if (message.author.id !== channels.bridgeBotId) continue;
-    const s = readMessage(message)?.envelope;
-    if (typeof s?.ref !== "string" || typeof s.status !== "string" || statuses.has(s.ref)) continue;
-    const requestId = message.message_reference?.message_id;
-    const request = requestId ? requests.get(requestId) : undefined;
-    statuses.set(s.ref, {
-      ...request,
-      ref: s.ref,
-      state: s.status,
-      thing: s.thing,
-      url: s.url,
-      edited: s.edited,
-      reason: s.reason,
-      detail: s.detail,
-      requestMessageId: requestId,
-    });
-  }
-  // A bridge status always beats "sent", even when a repeated request is newer than it.
-  const found = new Map<string, Draft>();
-  for (const message of messages) {
-    const request = requests.get(message.id);
-    const ref =
-      message.author.id === channels.bridgeBotId
-        ? readMessage(message)?.envelope.ref
-        : request?.ref;
-    if (typeof ref !== "string" || found.has(ref)) continue;
-    const draft = statuses.get(ref) ?? request;
-    if (draft) found.set(ref, draft);
-  }
-  return [...found.values()];
-}
-
-export function createServer(discord: DiscordApi, channels: Channels): McpServer {
+export function createServer(
+  discord: DiscordApi,
+  channels: Channels,
+  events?: EventHub,
+): McpServer {
   const server = new McpServer({ name: "apps-of-dots-reddit", version: SERVER_VERSION });
   const send = async (envelope: Record<string, unknown>, text: string) => {
     const messageId = await discord.send(channels.outboxChannelId, frame(envelope, text));
@@ -241,6 +179,42 @@ export function createServer(discord: DiscordApi, channels: Channels): McpServer
       return reply({ items, cursor: page.at(-1)?.id ?? after ?? null });
     },
   );
+
+  server.registerTool(
+    "reddit_get_pending_events",
+    {
+      title: "Get pending Reddit events",
+      description:
+        "Unacknowledged reddit.draft.finished events, oldest first, each with its draft's ref, " +
+        "state and url or reason. Call it every time the event fires, with or without its data, " +
+        "then call reddit_acknowledge_events with the eventIds you finished.",
+      inputSchema: {
+        limit: z.int().min(1).max(20).default(10).describe("At most this many events."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ limit }) => (events ? reply({ events: events.pending(limit) }) : noEvents),
+  );
+
+  server.registerTool(
+    "reddit_acknowledge_events",
+    {
+      title: "Acknowledge Reddit events",
+      description:
+        "Mark finished events, by their eventIds from reddit_get_pending_events, so " +
+        "reddit_get_pending_events stops returning them.",
+      inputSchema: {
+        eventIds: z.array(z.string().min(1)).min(1).max(20).describe("Event IDs to acknowledge."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ eventIds }) => (events ? reply(await events.acknowledge(eventIds)) : noEvents),
+  );
   return server;
 }
 
@@ -268,16 +242,64 @@ export async function inspectTools() {
   }
 }
 
-/** Serves the MCP on stdio until the client disconnects. */
-export async function runServer(token: string, channels: Channels): Promise<number> {
-  const server = createServer(restDiscord(token), channels);
-  const transport = new StdioServerTransport();
+/**
+ * Serves the MCP on stdio until the client disconnects. With a data directory (the tunnel's
+ * server) it also runs MCP Events.
+ */
+export async function runServer(token: string, channels: Channels, home?: string): Promise<number> {
+  const discord = restDiscord(token);
+  const hub = home ? await EventHub.open({ file: stateFile(home) }) : undefined;
+  let stopWatching = () => {};
+  if (hub) {
+    hub.start();
+    stopWatching = watchDrafts(hub, discord, channels);
+  }
+  await serve(discord, channels, hub, process.stdin, process.stdout);
+  stopWatching();
+  hub?.stop();
+  return 0;
+}
+
+/**
+ * Answers JSON-RPC lines from input until it ends. With an event hub, MCP 2026-07-28 requests
+ * go to the handler and every other line goes on to the SDK server unchanged.
+ */
+export async function serve(
+  discord: DiscordApi,
+  channels: Channels,
+  hub: EventHub | undefined,
+  input: Readable,
+  output: Writable,
+): Promise<void> {
+  const server = createServer(discord, channels, hub);
+  const legacy = new PassThrough();
+  const transport = new StdioServerTransport(hub ? legacy : input, output);
+  if (hub) {
+    const tools = createServer(discord, channels, hub);
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "apps-of-dots-reddit-modern", version: SERVER_VERSION });
+    await tools.connect(serverSide);
+    await client.connect(clientSide);
+    const respond = modernHandler(client, hub, SERVER_VERSION);
+    const lines = createInterface({ input, crlfDelay: Infinity });
+    lines.on("line", (line) => {
+      let message: unknown;
+      try {
+        message = JSON.parse(line);
+      } catch {
+        message = undefined;
+      }
+      if (isModern(message))
+        void respond(message).then((response) => output.write(JSON.stringify(response) + "\n"));
+      else legacy.write(line + "\n");
+    });
+    lines.on("close", () => legacy.end());
+  }
   // The stdio transport only closes when asked; the tunnel ends a session by closing stdin.
   const closed = new Promise<void>((resolve) => {
     transport.onclose = () => resolve();
-    process.stdin.once("end", () => resolve());
+    input.once("end", () => resolve());
   });
   await server.connect(transport);
   await closed;
-  return 0;
 }

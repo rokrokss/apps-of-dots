@@ -41,7 +41,7 @@ test(
       "--skip-validation",
       "--json",
     );
-    assert.equal(JSON.parse(setup.stdout).toolCount, 5);
+    assert.equal(JSON.parse(setup.stdout).toolCount, 7);
     assert.ok(!setup.stdout.includes("fake-bot-token"));
     assert.equal((await loadConfig(home))?.inboxChannelId, "800000000000000002");
     assert.equal(JSON.parse((await command("start", "--json")).stdout).ready, true);

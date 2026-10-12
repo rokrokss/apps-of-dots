@@ -108,7 +108,7 @@ function renderCards() {
     { id: "discord", name: "Discord", tools: 99 },
     { id: "telegram", name: "Telegram", tools: 139 },
     { id: "whatsapp", name: "WhatsApp", tools: 17 },
-    { id: "reddit", name: "Reddit", tools: 5 },
+    { id: "reddit", name: "Reddit", tools: 7 },
   ];
   const markup = cards
     .map((app) => {

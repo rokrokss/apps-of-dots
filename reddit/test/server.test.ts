@@ -8,7 +8,7 @@ import { AGENT, BRIDGE, channels, connect, FakeDiscord } from "./fakes.js";
 const outbox = channels.outboxChannelId;
 const inbox = channels.inboxChannelId;
 
-test("the five tools match the frozen contract and list without Discord", async () => {
+test("the seven tools match the frozen contract and list without Discord", async () => {
   const tools = await inspectTools();
   assert.equal(tools.length, TOOL_COUNT);
   const snapshot = JSON.parse(
@@ -146,4 +146,13 @@ test("activity lists webhook events oldest first and pages with a cursor", async
   );
   const empty = await call("reddit_list_activity", { after: next.cursor });
   assert.deepEqual(empty, { items: [], cursor: next.cursor });
+});
+
+test("event tools explain that only the tunnel's server keeps events", async () => {
+  const call = await connect(new FakeDiscord());
+  assert.match((await call("reddit_get_pending_events")).error, /reddit start/);
+  assert.match(
+    (await call("reddit_acknowledge_events", { eventIds: ["x"] })).error,
+    /reddit start/,
+  );
 });

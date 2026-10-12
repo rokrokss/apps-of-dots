@@ -2,6 +2,27 @@
   "source": "reddit/src/server.ts",
   "tools": [
     {
+      "name": "reddit_acknowledge_events",
+      "description": "Mark finished events, by their eventIds from reddit_get_pending_events, so reddit_get_pending_events stops returning them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eventIds": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Event IDs to acknowledge."
+          }
+        },
+        "required": ["eventIds"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
       "name": "reddit_get_draft",
       "description": "State of a request by ref: sent (not picked up yet), queued (waiting for approval or limits), posted (with url), rejected or failed (with reason), expired, or not_found among the last 300 outbox messages.",
       "inputSchema": {
@@ -14,6 +35,23 @@
           }
         },
         "required": ["ref"],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "reddit_get_pending_events",
+      "description": "Unacknowledged reddit.draft.finished events, oldest first, each with its draft's ref, state and url or reason. Call it every time the event fires, with or without its data, then call reddit_acknowledge_events with the eventIds you finished.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 10,
+            "description": "At most this many events.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
         "$schema": "http://json-schema.org/draft-07/schema#"
       }
     },
