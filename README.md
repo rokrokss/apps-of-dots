@@ -34,7 +34,7 @@ it without a public server. One command line and one local setup page manage the
 | **Discord**          | [Built in](discord/)                                                                 | All **99 upstream MCP tools**, through Secure MCP Tunnel or local stdio |
 | **Telegram**         | [Built in](telegram/)                                                                | All **139 upstream tools**, personal account via Telethon               |
 | **WhatsApp**         | [Built in](whatsapp/)                                                                | All **17 upstream tools**, personal linked device via whatsmeow         |
-| **Reddit**           | [Built in](reddit/)                                                                  | **5 tools** for one subreddit you moderate, through a Devvit bridge     |
+| **Reddit**           | [Built in](reddit/)                                                                  | **7 tools** for one subreddit you moderate, through a Devvit bridge     |
 | **KakaoTalk Bridge** | [External project](https://github.com/rokrokss/kakaotalk-bridge)                     | Follow its own installation and connection guide                        |
 | **Recly Events**     | [External project](https://github.com/rokrokss/recly/blob/main/docs/recly-events.md) | Follow its own events setup guide                                       |
 
@@ -212,7 +212,9 @@ pnpm apps-of-dots reddit status
 Setup checks that the bot can read both channels and prints its user ID; enter that ID as **Agent
 bot user ID** in the bridge's install settings on Reddit, or the bridge ignores every request. Posts
 and replies come from the bridge's app account and, by default, wait for a moderator to approve them
-in Reddit. See the [Reddit guide](reddit/README.md) for the five tools and their limits.
+in Reddit. Reddit is the one integration with an OpenAI MCP Event: `reddit.draft.finished` wakes a
+subscribed dot when a draft is posted, rejected, failed or expired. See the
+[Reddit guide](reddit/README.md) for the seven tools, the event and their limits.
 
 ## Everyday commands
 
@@ -253,8 +255,8 @@ their installations.
 This is the first implementation. macOS has local CLI and MCP contract coverage; CI is configured
 for macOS and Linux on Node 24. Real account logins and app/tunnel/dot round trips require your
 credentials and have not been verified in this checkout. The Reddit bridge was verified on Reddit
-(request, approval, post, and inbox edits and deletions); the Reddit MCP's tunnel and dot round trip
-has not been. Windows and automatic startup are follow-up work.
+(request, approval, post, and inbox edits and deletions); the Reddit MCP's tunnel and dot round
+trip, including MCP Events delivery, has not been. Windows and automatic startup are follow-up work.
 
 ```sh
 pnpm test       # Build, real stdio tool parity, isolated lifecycle tests

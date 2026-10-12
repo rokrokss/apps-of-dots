@@ -34,7 +34,7 @@ OpenAI 클라이언트와 연결합니다. 하나의 명령줄과 로컬 설정 
 | Discord   | 이 레포에서 실행. 원본 MCP의 **99개 도구 전체**와 Secure MCP Tunnel 지원                    |
 | Telegram  | 이 레포에서 실행. chigwell/telegram-mcp의 **139개 도구**, 개인 계정·터널 지원               |
 | WhatsApp  | 이 레포에서 실행. verygoodplugins/whatsapp-mcp의 **17개 도구**, 연결된 기기·터널 지원       |
-| Reddit    | 이 레포에서 실행. 내가 운영하는 서브레딧 하나에 대한 **5개 도구**, Devvit 브리지 경유       |
+| Reddit    | 이 레포에서 실행. 내가 운영하는 서브레딧 하나에 대한 **7개 도구**, Devvit 브리지 경유       |
 | KakaoTalk | [기존 프로젝트](https://github.com/rokrokss/kakaotalk-bridge)의 설치 가이드 사용            |
 | Recly     | [기존 Events 가이드](https://github.com/rokrokss/recly/blob/main/docs/recly-events.md) 사용 |
 
@@ -177,7 +177,9 @@ pnpm apps-of-dots reddit status
 설정은 봇이 두 채널을 읽을 수 있는지 확인하고 봇의 사용자 ID를 알려줍니다. 이 ID를 Reddit의 브리지
 앱 설치 설정에서 **Agent bot user ID**에 넣어야 하며, 넣지 않으면 브리지가 모든 요청을 무시합니다.
 글과 답글은 브리지의 앱 계정으로 올라가고, 기본값에서는 모더레이터가 Reddit에서 승인해야 게시됩니다.
-도구 5개와 제한은 [Reddit 가이드](reddit/README.md)를 참고하세요.
+도구 7개와 이벤트, 제한은 [Reddit 가이드](reddit/README.md)를 참고하세요. Reddit은 OpenAI MCP
+Events를 하나 제공하는 유일한 연동입니다. 초안이 게시·거절·실패·만료되면 `reddit.draft.finished`가
+구독한 dot을 깨웁니다.
 
 ## 운영
 
@@ -234,8 +236,8 @@ pnpm apps-of-dots discord stop
 현재는 첫 구현이며 macOS에서 CLI와 실제 도구 스키마를 검사했습니다. `pnpm test:servers`는 계정
 로그인 없이 레포 내부 Python·Go 코드를 빌드하고 원본 도구 스키마와 비교합니다. 실제 계정 인증·OpenAI
 터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Reddit 브리지는 Reddit에서 요청·승인·게시와 inbox
-수정·삭제 반영까지 확인했지만, Reddit MCP의 터널·dot 연결은 아직 확인하지 않았습니다. Linux용 CI
-설정은 포함되어 있고, Windows와 부팅 자동 실행은 후속 범위입니다.
+수정·삭제 반영까지 확인했지만, Reddit MCP의 터널·dot 연결과 MCP Events 전달은 아직 확인하지
+않았습니다. Linux용 CI 설정은 포함되어 있고, Windows와 부팅 자동 실행은 후속 범위입니다.
 
 ## 이미지와 라이선스
 

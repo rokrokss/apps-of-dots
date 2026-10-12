@@ -70,15 +70,19 @@ agent, and the two sides exchange JSON messages in two private Discord channels
 ```mermaid
 flowchart LR
     Dot[OpenAI dot] --> Tunnel[tunnel-client]
-    Tunnel -->|Private stdio| MCP[Reddit MCP · 5 tools]
+    Tunnel -->|Private stdio| MCP[Reddit MCP · 7 tools]
     MCP -->|Requests| Outbox["#reddit-outbox"]
     Outbox -->|Polled every minute| Bridge[Devvit bridge on Reddit]
     Bridge -->|Status replies| Outbox
     Bridge <-->|Approve, post, read| Subreddit[Subreddit]
     Bridge -->|Webhook copies| Inbox["#reddit-inbox"]
     Inbox --> MCP
+    MCP -.->|reddit.draft.finished| Callback[OpenAI event callback]
 ```
 
 The local MCP runs in-process under the same managed tunnel lifecycle as Discord, keeps no Reddit
-data, and reads Discord on each call. The bridge keeps request metadata, its read position and the
-copy index in the installation's Redis on Reddit.
+posts or comments, and reads Discord on each call. The same process answers MCP 2026-07-28 requests
+next to the SDK's handshake, reads the outbox every 30 seconds for finished drafts, and delivers
+`reddit.draft.finished` to subscribed dots as signed webhooks. Its subscriptions and event inbox are
+in `reddit/events.json`. The bridge keeps request metadata, its read position and the copy index in
+the installation's Redis on Reddit.

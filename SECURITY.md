@@ -67,6 +67,10 @@ who can post as the agent bot can ask the bridge to post, so keep both channels 
 manual unless you accept that.
 
 Reddit content copied to the inbox channel is deleted when it is deleted or removed on Reddit, and
-after 30 days in any case. The MCP stores nothing locally. Content an agent has already read cannot
+after 30 days in any case. The MCP stores no posts or comments locally. For MCP Events, the tunnel's
+server keeps `reddit/events.json` (mode 0600) in the private data directory: each subscription's
+callback URL and signing secret, and an event inbox with draft refs, states, titles, links and
+rejection notes. Events are sent over HTTPS only to OpenAI's callback host,
+`connectors.api.openai.com`, without following redirects. Content an agent has already read cannot
 be recalled from wherever it went. Using the bridge is subject to Reddit's terms and policies for
 apps.
