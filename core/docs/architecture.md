@@ -59,3 +59,26 @@ primitives.
 Offline `tools` inspection imports the local FastMCP definitions with a temporary empty session and
 skips account startup; it does not make live app calls. Normal serving always uses the real
 entrypoint. `test:servers` compares all actual MCP schemas to the frozen original definitions.
+
+## Reddit through a Devvit bridge
+
+Reddit is the one integration whose app side does not run on this computer. Reddit's public Data API
+is closing to new apps, so a Devvit app installed in the subreddit (`reddit/devvit/`) acts for the
+agent, and the two sides exchange JSON messages in two private Discord channels
+([protocol](../../reddit/PROTOCOL.md)).
+
+```mermaid
+flowchart LR
+    Dot[OpenAI dot] --> Tunnel[tunnel-client]
+    Tunnel -->|Private stdio| MCP[Reddit MCP · 5 tools]
+    MCP -->|Requests| Outbox["#reddit-outbox"]
+    Outbox -->|Polled every minute| Bridge[Devvit bridge on Reddit]
+    Bridge -->|Status replies| Outbox
+    Bridge <-->|Approve, post, read| Subreddit[Subreddit]
+    Bridge -->|Webhook copies| Inbox["#reddit-inbox"]
+    Inbox --> MCP
+```
+
+The local MCP runs in-process under the same managed tunnel lifecycle as Discord, keeps no Reddit
+data, and reads Discord on each call. The bridge keeps request metadata, its read position and the
+copy index in the installation's Redis on Reddit.

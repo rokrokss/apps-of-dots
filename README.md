@@ -116,7 +116,7 @@ pnpm apps-of-dots ui
 ```
 
 <p align="center">
-  <img src="brand/out/setup-center.png" alt="The local setup center overview with Discord, Telegram, and WhatsApp" width="100%" />
+  <img src="brand/out/setup-center.png" alt="The local setup center overview with Discord, Telegram, WhatsApp, and Reddit" width="100%" />
 </p>
 
 The local setup center guides Discord, Telegram, WhatsApp, and Reddit account and tunnel
@@ -169,10 +169,10 @@ Try: “List my Discord servers and the channels in this server.”
 
 ## Telegram and WhatsApp
 
-All three MCP implementations live in this repository: `discord/server`, `telegram/server`, and
-`whatsapp/server` + `whatsapp/bridge`. No external MCP package or checkout is needed at runtime.
-Telegram/WhatsApp setup installs locked libraries using `uv` and builds the local WhatsApp bridge
-(see [requirements](#installation)). Use a separate tunnel ID for each app.
+All MCP implementations live in this repository: `discord/server`, `telegram/server`,
+`whatsapp/server` + `whatsapp/bridge`, and `reddit/`. No external MCP package or checkout is needed
+at runtime. Telegram/WhatsApp setup installs locked libraries using `uv` and builds the local
+WhatsApp bridge (see [requirements](#installation)). Use a separate tunnel ID for each app.
 
 ```sh
 pnpm apps-of-dots telegram setup
@@ -196,11 +196,29 @@ Both provide `status`, `stop`, `restart`, `logs`, `doctor`, `tools`, and local `
 WhatsApp supervises its Go bridge and Python MCP together. Optional transcription services/models
 are not provisioned, and neither integration adds OpenAI MCP Events delivery.
 
+## Reddit
+
+Reddit works in **one subreddit you moderate**. Reddit's Data API is closing to new apps, so a small
+[Devvit app](reddit/devvit/README.md) that you install in the subreddit does the Reddit side, and it
+talks to this computer through two private Discord channels. You need that app, the two channels, a
+Discord bot for this computer (your Discord integration's bot works), and a separate tunnel.
+
+```sh
+pnpm apps-of-dots reddit setup --outbox-channel <id> --inbox-channel <id> --bridge-bot <id>
+pnpm apps-of-dots reddit start
+pnpm apps-of-dots reddit status
+```
+
+Setup checks that the bot can read both channels and prints its user ID; enter that ID as **Agent
+bot user ID** in the bridge's install settings on Reddit, or the bridge ignores every request. Posts
+and replies come from the bridge's app account and, by default, wait for a moderator to approve them
+in Reddit. See the [Reddit guide](reddit/README.md) for the five tools and their limits.
+
 ## Everyday commands
 
 All apps use `setup → start → status`; Telegram and WhatsApp add QR `login` after setup. Common
 command names, help order, setup summaries and startup hints are shared. Replace `discord` below
-with `telegram` or `whatsapp` for the same operations.
+with `telegram`, `whatsapp` or `reddit` for the same operations.
 
 ```sh
 pnpm apps-of-dots list
@@ -220,6 +238,7 @@ diagnostics never start or stop a tunnel for you:
 | Discord  | Tunnel may be running or stopped; the bot token is checked directly. |
 | Telegram | Run `telegram stop`; run `telegram start` again afterward.           |
 | WhatsApp | Run `whatsapp start`; live checks use the running bridge.            |
+| Reddit   | Tunnel may be running or stopped; checks the bot and both channels.  |
 
 `start` uses official tunnel-client background process management. Closing the terminal does not
 stop it. **After a reboot, run `start` again**; this version does not install a login or boot
@@ -233,8 +252,9 @@ their installations.
 
 This is the first implementation. macOS has local CLI and MCP contract coverage; CI is configured
 for macOS and Linux on Node 24. Real account logins and app/tunnel/dot round trips require your
-credentials and have not been verified in this checkout. Windows and automatic startup are follow-up
-work.
+credentials and have not been verified in this checkout. The Reddit bridge was verified on Reddit
+(request, approval, post, and inbox edits and deletions); the Reddit MCP's tunnel and dot round trip
+has not been. Windows and automatic startup are follow-up work.
 
 ```sh
 pnpm test       # Build, real stdio tool parity, isolated lifecycle tests

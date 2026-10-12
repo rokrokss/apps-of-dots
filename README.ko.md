@@ -114,7 +114,7 @@ pnpm apps-of-dots ui
 ```
 
 <p align="center">
-  <img src="brand/out/setup-center.png" alt="Discord, Telegram, WhatsApp이 표시된 로컬 설정 화면" width="100%" />
+  <img src="brand/out/setup-center.png" alt="Discord, Telegram, WhatsApp, Reddit이 표시된 로컬 설정 화면" width="100%" />
 </p>
 
 Discord·Telegram·WhatsApp·Reddit의 계정·터널 설정부터 상태 확인·시작·중지·ChatGPT에 추가하는
@@ -161,12 +161,30 @@ pnpm apps-of-dots discord status
 없으면 해당 ChatGPT 워크스페이스와의 연결을 확인하세요. 첫 질문으로 “내 Discord 서버 목록과 채널들을
 보여줘”를 해보세요.
 
+## Reddit 연결하기
+
+Reddit은 **내가 운영하는 서브레딧 하나**에서 동작합니다. Reddit Data API가 신규 앱에 닫히고 있어서,
+서브레딧에 설치하는 작은 [Devvit 앱](reddit/devvit/README.md)이 Reddit 쪽을 맡고 이 컴퓨터와는
+비공개 Discord 채널 두 개로 주고받습니다. 이 앱과 채널 두 개, 이 컴퓨터가 쓸 Discord 봇(Discord
+연동의 봇을 써도 됩니다), 그리고 Reddit용 터널이 필요합니다.
+
+```sh
+pnpm apps-of-dots reddit setup --outbox-channel <id> --inbox-channel <id> --bridge-bot <id>
+pnpm apps-of-dots reddit start
+pnpm apps-of-dots reddit status
+```
+
+설정은 봇이 두 채널을 읽을 수 있는지 확인하고 봇의 사용자 ID를 알려줍니다. 이 ID를 Reddit의 브리지
+앱 설치 설정에서 **Agent bot user ID**에 넣어야 하며, 넣지 않으면 브리지가 모든 요청을 무시합니다.
+글과 답글은 브리지의 앱 계정으로 올라가고, 기본값에서는 모더레이터가 Reddit에서 승인해야 게시됩니다.
+도구 5개와 제한은 [Reddit 가이드](reddit/README.md)를 참고하세요.
+
 ## 운영
 
-Discord·Telegram·WhatsApp MCP 구현은 모두 이 레포의 `discord/server`, `telegram/server`,
-`whatsapp/server`와 `whatsapp/bridge`에 포함되어 있습니다. 외부 MCP 패키지나 저장소를 받아 실행하지
-않습니다. Telegram과 WhatsApp의 `setup`은 `uv`로 잠긴 라이브러리 의존성을 설치하고 로컬 WhatsApp
-브리지를 빌드합니다([필요 항목](#설치) 참고). 앱별로 별도의 터널 ID를 사용하세요.
+Discord·Telegram·WhatsApp·Reddit MCP 구현은 모두 이 레포의 `discord/server`, `telegram/server`,
+`whatsapp/server`와 `whatsapp/bridge`, `reddit/`에 포함되어 있습니다. 외부 MCP 패키지나 저장소를
+받아 실행하지 않습니다. Telegram과 WhatsApp의 `setup`은 `uv`로 잠긴 라이브러리 의존성을 설치하고
+로컬 WhatsApp 브리지를 빌드합니다([필요 항목](#설치) 참고). 앱별로 별도의 터널 ID를 사용하세요.
 
 ```sh
 pnpm apps-of-dots telegram setup
@@ -207,6 +225,7 @@ pnpm apps-of-dots discord stop
 | Discord  | 실행·중지 상태 모두 가능. 봇 토큰을 직접 확인합니다.                  |
 | Telegram | `telegram stop`으로 중지. 검사 후 `telegram start`로 다시 연결합니다. |
 | WhatsApp | `whatsapp start`로 시작. 실행 중인 브리지를 검사합니다.               |
+| Reddit   | 실행·중지 상태 모두 가능. 봇과 두 채널 접근을 확인합니다.             |
 
 공식 tunnel-client가 백그라운드 프로세스를 관리합니다. 터미널을 닫아도 실행되지만, **재부팅 후에는
 `start`를 다시 실행해야 합니다**. 컴퓨터가 꺼지거나 잠들면 연결도 유지되지 않습니다. 중지해도 설정과
@@ -214,8 +233,9 @@ pnpm apps-of-dots discord stop
 
 현재는 첫 구현이며 macOS에서 CLI와 실제 도구 스키마를 검사했습니다. `pnpm test:servers`는 계정
 로그인 없이 레포 내부 Python·Go 코드를 빌드하고 원본 도구 스키마와 비교합니다. 실제 계정 인증·OpenAI
-터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Linux용 CI 설정은 포함되어 있고, Windows와 부팅
-자동 실행은 후속 범위입니다.
+터널·dot 연결은 사용자 키로 별도 확인해야 합니다. Reddit 브리지는 Reddit에서 요청·승인·게시와 inbox
+수정·삭제 반영까지 확인했지만, Reddit MCP의 터널·dot 연결은 아직 확인하지 않았습니다. Linux용 CI
+설정은 포함되어 있고, Windows와 부팅 자동 실행은 후속 범위입니다.
 
 ## 이미지와 라이선스
 

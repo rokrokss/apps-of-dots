@@ -55,3 +55,18 @@ environment, excluding unrelated credentials, alternate transports and webhook d
 to upload are confined to each app's `files/` directory. WhatsApp's bridge uses a generated bearer
 token and a loopback listener; its raw stdout never reaches MCP stdout. Server logs and local
 databases can still contain private conversation content.
+
+## Reddit integration
+
+The Reddit side runs on Reddit's servers as a Devvit app installed in one subreddit. Its Discord bot
+token and inbox webhook URL are Devvit secrets stored by Reddit; only the agent bot's token and the
+tunnel key are on this computer. The Discord channels are the boundary: the bridge acts only on
+requests from the configured agent bot, the MCP trusts statuses only from the bridge bot and
+activity only from webhook messages, and the bridge disables mentions on everything it sends. Anyone
+who can post as the agent bot can ask the bridge to post, so keep both channels private and approval
+manual unless you accept that.
+
+Reddit content copied to the inbox channel is deleted when it is deleted or removed on Reddit, and
+after 30 days in any case. The MCP stores nothing locally. Content an agent has already read cannot
+be recalled from wherever it went. Using the bridge is subject to Reddit's terms and policies for
+apps.
