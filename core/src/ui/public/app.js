@@ -1,10 +1,21 @@
 const $ = (id) => document.getElementById(id);
-const icons = { discord: "D", telegram: "↗", whatsapp: "W" };
+const icons = { discord: "D", telegram: "↗", whatsapp: "W", reddit: "r/" };
 const descriptions = {
   discord: "Servers, channels, and conversations. All within reach of your dot.",
   telegram: "Your conversations and contacts, connected through your own account.",
   whatsapp: "Your chats, connected with a linked device on this computer.",
+  reddit: "Posts and comments in a subreddit you moderate, through a bridge app on Reddit.",
 };
+const apps = ["discord", "telegram", "whatsapp", "reddit"];
+// Bot-token apps have no account sign-in step.
+const botApps = ["discord", "reddit"];
+const accountKind = (id) =>
+  id === "reddit"
+    ? "Bot account + Reddit bridge"
+    : botApps.includes(id)
+      ? "Bot account"
+      : "Personal account";
+const snowflake = /^\d{17,20}$/;
 let token = "";
 let selected = "overview";
 try {
@@ -17,7 +28,7 @@ try {
   token = new URLSearchParams(location.hash.slice(1)).get("token") || "";
 }
 if (location.hash) history.replaceState(null, "", location.pathname);
-if (!["overview", "discord", "telegram", "whatsapp"].includes(selected)) selected = "overview";
+if (!["overview", ...apps].includes(selected)) selected = "overview";
 let state;
 let loading = false;
 let initialized = false;
@@ -36,9 +47,11 @@ const questions = {
   discord: "Show me my Discord servers and their channels.",
   telegram: "Show me my recent Telegram conversations.",
   whatsapp: "Show me my recent WhatsApp chats.",
+  reddit: "Show me the latest posts and comments in my subreddit.",
 };
 function clearSecrets() {
-  for (const id of ["bot-token", "tunnel-key", "api-hash", "two-step-password"]) $(id).value = "";
+  for (const id of ["bot-token", "reddit-bot-token", "tunnel-key", "api-hash", "two-step-password"])
+    $(id).value = "";
 }
 function clearLoginUi() {
   qrKey = "";
@@ -86,21 +99,22 @@ function status(app) {
     return { text: "Tunnel ready", style: "ready" };
   if (app.processRunning)
     return { text: app.healthy ? "Getting ready" : "Check connection", style: "warning" };
-  if (app.id !== "discord" && !app.sessionSaved)
+  if (!botApps.includes(app.id) && !app.sessionSaved)
     return { text: "Sign-in needed", style: "warning" };
   return { text: "Stopped", style: "" };
 }
 function renderCards() {
-  const apps = state?.apps.filter((app) => app.kind === "built-in") || [
+  const cards = state?.apps.filter((app) => app.kind === "built-in") || [
     { id: "discord", name: "Discord", tools: 99 },
     { id: "telegram", name: "Telegram", tools: 139 },
     { id: "whatsapp", name: "WhatsApp", tools: 17 },
+    { id: "reddit", name: "Reddit", tools: 5 },
   ];
-  const markup = apps
+  const markup = cards
     .map((app) => {
       const badge = status(app);
       const action = app.configured ? "Manage connection" : `Connect ${app.name}`;
-      return `<article class="app-card"><div class="card-top"><div class="app-icon ${app.id}" aria-hidden="true">${icons[app.id]}</div><span class="badge ${badge.style}">${badge.text}</span></div><h3>${app.name}</h3><p>${descriptions[app.id]}</p><div class="card-meta"><span>${app.tools} tools</span><i></i><span>${app.id === "discord" ? "Bot account" : "Personal account"}</span></div><button class="card-button" data-select="${app.id}">${action}<span aria-hidden="true">↗</span></button></article>`;
+      return `<article class="app-card"><div class="card-top"><div class="app-icon ${app.id}" aria-hidden="true">${icons[app.id]}</div><span class="badge ${badge.style}">${badge.text}</span></div><h3>${app.name}</h3><p>${descriptions[app.id]}</p><div class="card-meta"><span>${app.tools} tools</span><i></i><span>${accountKind(app.id)}</span></div><button class="card-button" data-select="${app.id}">${action}<span aria-hidden="true">↗</span></button></article>`;
     })
     .join("");
   // Preserve keyboard focus when polling returns unchanged cards.
@@ -109,11 +123,11 @@ function renderCards() {
     cardsMarkup = markup;
   }
   $("next-step").disabled = !initialized;
-  const ready = apps.filter((app) => app.ready && app.processRunning && app.healthy).length;
+  const ready = cards.filter((app) => app.ready && app.processRunning && app.healthy).length;
   $("connection-count").textContent = initialized
-    ? `${ready} of 3 tunnels ready`
+    ? `${ready} of ${cards.length} tunnels ready`
     : "Checking connections…";
-  for (const app of apps)
+  for (const app of cards)
     $("nav-" + app.id).classList.toggle(
       "ready",
       Boolean(app.ready && app.processRunning && app.healthy),
@@ -147,17 +161,22 @@ function populateSettings() {
   $("guilds").value = app?.guilds || "all";
   $("api-id").value = app?.apiId || "";
   $("bridge-port").value = app?.bridgePort || "8766";
+  $("outbox-channel").value = app?.outboxChannelId || "";
+  $("inbox-channel").value = app?.inboxChannelId || "";
+  $("bridge-bot").value = app?.bridgeBotId || "";
   $("hash-saved").hidden = !app?.credentialsSaved;
-  for (const id of ["bot-saved", "key-saved"]) $(id).hidden = !app?.credentialsSaved;
-  $("bot-help").textContent = app?.credentialsSaved
-    ? "Leave blank to keep your saved bot token, or paste a new one."
-    : "Stored privately on this computer. It won’t be shown again.";
+  for (const id of ["bot-saved", "reddit-bot-saved", "key-saved"])
+    $(id).hidden = !app?.credentialsSaved;
+  for (const id of ["bot-help", "reddit-bot-help"])
+    $(id).textContent = app?.credentialsSaved
+      ? "Leave blank to keep your saved bot token, or paste a new one."
+      : "Stored privately on this computer. It won’t be shown again.";
   $("key-help").textContent = app?.credentialsSaved
     ? "Leave blank to keep your saved runtime key, or paste a new one."
     : "Your key is saved locally and never returned to this page.";
 }
 function selectApp(id) {
-  if (!["overview", "discord", "telegram", "whatsapp"].includes(id)) return;
+  if (!["overview", ...apps].includes(id)) return;
   clearSecrets();
   clearLoginUi();
   selected = id;
@@ -180,16 +199,18 @@ function selectApp(id) {
   $("detail-icon").className = `app-icon ${id}`;
   $("detail-icon").textContent = icons[id];
   $("detail-description").textContent = descriptions[id];
-  for (const name of ["discord", "telegram", "whatsapp"]) $(name + "-account").hidden = name !== id;
-  $("account-meta").textContent =
-    `${app.tools || ""} tools · ${id === "discord" ? "Bot account" : "Personal account"}`;
+  for (const name of apps) $(name + "-account").hidden = name !== id;
+  $("account-meta").textContent = `${app.tools || ""} tools · ${accountKind(id)}`;
   $("tunnel-app-title").textContent = `Create a tunnel for ${app.name}`;
   $("setup-summary").textContent =
     id === "discord"
       ? "We’ll verify the bot, save your settings, and start the tunnel."
-      : "We’ll prepare this app, show a QR code to approve on your phone, and start the tunnel after sign-in.";
-  $("connect-button").firstChild.textContent =
-    id === "discord" ? "Save & connect " : "Continue to sign-in ";
+      : id === "reddit"
+        ? "We’ll check that the bot can read both channels, save your settings, and start the tunnel."
+        : "We’ll prepare this app, show a QR code to approve on your phone, and start the tunnel after sign-in.";
+  $("connect-button").firstChild.textContent = botApps.includes(id)
+    ? "Save & connect "
+    : "Continue to sign-in ";
   $("finish-intro").textContent = `Your tunnel is ready. Now add ${app.name} to ChatGPT.`;
   $("tunnel-label").textContent = `YOUR ${app.name.toUpperCase()} TUNNEL`;
   $("first-question").textContent = `“${questions[id]}”`;
@@ -275,8 +296,8 @@ function renderDetail() {
       ? "Status updates automatically. If this takes too long, stop the tunnel and check your settings."
       : "Start it to connect from your AI app. Your settings are saved.";
   $("start-button").hidden =
-    Boolean(app.processRunning) || (selected !== "discord" && !app.sessionSaved);
-  $("login-button").hidden = selected === "discord" || Boolean(app.processRunning);
+    Boolean(app.processRunning) || (!botApps.includes(selected) && !app.sessionSaved);
+  $("login-button").hidden = botApps.includes(selected) || Boolean(app.processRunning);
   $("login-button").textContent = app.sessionSaved ? "Sign in again" : "Sign in with QR";
   $("stop-button").hidden = !app.processRunning;
   $("edit-settings").disabled = Boolean(app.processRunning || busy);
@@ -284,6 +305,12 @@ function renderDetail() {
     ? "Stop the tunnel before editing settings."
     : "Edit your saved settings";
   $("finish-guide").hidden = !ready;
+  // The bridge ignores requests until its install settings name this computer's bot.
+  $("reddit-handoff").hidden = !(selected === "reddit" && app.configured);
+  $("agent-bot-id").textContent = app.agentBotId || "";
+  $("copy-agent-id").dataset.copy = app.agentBotId || "";
+  $("agent-id-row").hidden = !app.agentBotId;
+  $("agent-id-missing").hidden = Boolean(app.agentBotId);
   $("saved-tunnel").textContent = app.tunnelId || "";
   document.querySelectorAll("[data-action]").forEach((button) => {
     button.disabled = Boolean(busy);
@@ -311,10 +338,12 @@ function renderDetail() {
       $("progress-symbol").classList.toggle("spinning", job.status === "running");
       $("recovery-actions").hidden = job.status === "running";
       $("retry-login").hidden =
-        selected === "discord" || !app.configured || Boolean(app.processRunning);
+        botApps.includes(selected) || !app.configured || Boolean(app.processRunning);
       $("back-to-settings").hidden = Boolean(app.processRunning);
       $("retry-start").hidden =
-        !app.configured || job.action === "stop" || (selected !== "discord" && !app.sessionSaved);
+        !app.configured ||
+        job.action === "stop" ||
+        (!botApps.includes(selected) && !app.sessionSaved);
       $("retry-stop").hidden = !app.processRunning;
       $("copy-doctor").dataset.copy = app.commands.at(-1);
       void renderLogin(job);
@@ -379,6 +408,27 @@ async function mutate(action, input = {}) {
 }
 function validAccount() {
   if (selected === "whatsapp") return true;
+  if (selected === "reddit") {
+    const token = $("reddit-bot-token");
+    token.setCustomValidity(
+      !token.value.trim() && !appById(selected)?.credentialsSaved
+        ? "Enter the agent bot’s token."
+        : "",
+    );
+    if (!token.reportValidity()) return false;
+    for (const [id, label] of [
+      ["outbox-channel", "outbox channel"],
+      ["inbox-channel", "inbox channel"],
+      ["bridge-bot", "bridge bot"],
+    ]) {
+      const field = $(id);
+      field.setCustomValidity(
+        snowflake.test(field.value.trim()) ? "" : `Paste the ${label} ID (17–20 digits).`,
+      );
+      if (!field.reportValidity()) return false;
+    }
+    return true;
+  }
   if (selected === "telegram") {
     const id = $("api-id");
     id.setCustomValidity(
@@ -434,9 +484,16 @@ $("setup-form").addEventListener("submit", (event) => {
     tunnelKey: key.value.trim(),
     ...(selected === "discord"
       ? { botToken: $("bot-token").value.trim(), guilds: $("guilds").value.trim() || "all" }
-      : selected === "telegram"
-        ? { apiId: $("api-id").value.trim(), apiHash: $("api-hash").value.trim() }
-        : { bridgePort: $("bridge-port").value.trim() || "8766" }),
+      : selected === "reddit"
+        ? {
+            botToken: $("reddit-bot-token").value.trim(),
+            outboxChannel: $("outbox-channel").value.trim(),
+            inboxChannel: $("inbox-channel").value.trim(),
+            bridgeBot: $("bridge-bot").value.trim(),
+          }
+        : selected === "telegram"
+          ? { apiId: $("api-id").value.trim(), apiHash: $("api-hash").value.trim() }
+          : { bridgePort: $("bridge-port").value.trim() || "8766" }),
   };
   clearSecrets();
   void mutate("setup", input);
@@ -492,7 +549,14 @@ window.addEventListener("hashchange", () => {
   void refresh();
 });
 
-for (const id of ["api-id", "api-hash"])
+for (const id of [
+  "api-id",
+  "api-hash",
+  "reddit-bot-token",
+  "outbox-channel",
+  "inbox-channel",
+  "bridge-bot",
+])
   $(id).addEventListener("input", () => $(id).setCustomValidity(""));
 $("password-form").addEventListener("submit", async (event) => {
   event.preventDefault();

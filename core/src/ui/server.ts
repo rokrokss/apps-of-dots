@@ -114,7 +114,7 @@ export async function startWebUi(options: {
       return;
     }
     const match =
-      /^\/api\/(discord|telegram|whatsapp)\/(setup|login|start|stop|restart|password|cancel)$/.exec(
+      /^\/api\/(discord|telegram|whatsapp|reddit)\/(setup|login|start|stop|restart|password|cancel)$/.exec(
         path,
       );
     if (match && request.method === "POST") {

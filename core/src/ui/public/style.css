@@ -165,6 +165,10 @@ p {
   background: #e8f2e8;
   color: #5a9767;
 }
+.reddit {
+  background: #fbeee6;
+  color: #c8613a;
+}
 .nav-divider {
   height: 1px;
   background: var(--line);
@@ -400,7 +404,7 @@ h2 {
 }
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 17px;
 }
 .app-card {

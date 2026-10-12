@@ -120,7 +120,7 @@ test("local UI serves assets, gates its API, and rejects foreign origins and hos
     state.apps
       .filter((app: { kind: string }) => app.kind === "built-in")
       .map((app: { configured: boolean }) => app.configured),
-    [false, false, false],
+    [false, false, false, false],
   );
   assert.equal(state.tunnelClientInstalled, true);
   assert.match(state.apps[1].commands.join("\n"), /telegram login/);
@@ -208,6 +208,95 @@ test(
     assert.equal(saved.process_running, true);
   },
 );
+
+test(
+  "Reddit web setup checks the bot and channels, records its ID, and has no sign-in step",
+  { timeout: 20_000 },
+  async (t) => {
+    const checked: string[][] = [];
+    const ui = await webFixture(t, undefined, {
+      verifyReddit: async (token, channels) => {
+        checked.push([token, channels.outboxChannelId, channels.inboxChannelId]);
+        return { id: "900000000000000001", username: "agent" };
+      },
+    });
+    const reddit = {
+      tunnelId: "tunnel_reddit",
+      tunnelKey: "private-key-fixture",
+      botToken: "private-bot-fixture",
+      outboxChannel: "800000000000000001",
+      inboxChannel: "800000000000000002",
+      bridgeBot: "900000000000000002",
+    };
+    assert.equal(
+      (await ui.api("/api/reddit/setup", { ...reddit, outboxChannel: "general" })).status,
+      400,
+    );
+    assert.equal((await ui.api("/api/reddit/setup", { ...reddit, guilds: "all" })).status, 400);
+    assert.equal((await ui.api("/api/reddit/login", {})).status, 404);
+    assert.equal((await ui.api("/api/reddit/setup", reddit)).status, 202);
+    let state = await ui.finished();
+    assert.equal(state.job.status, "succeeded");
+    let app = state.apps.find((item: { id: string }) => item.id === "reddit");
+    assert.equal(app.ready, true);
+    assert.equal(app.credentialsSaved, true);
+    assert.equal(app.agentBotId, "900000000000000001");
+    assert.equal(app.bridgeBotId, reddit.bridgeBot);
+    assert.ok(!app.commands.join("\n").includes("login"));
+    for (const secret of [reddit.botToken, reddit.tunnelKey])
+      assert.ok(!JSON.stringify(state).includes(secret));
+    const config = join(ui.home, "reddit", "config.json");
+    assert.equal((await stat(config)).mode & 0o777, 0o600);
+    assert.ok(!(await readFile(config, "utf8")).includes(reddit.botToken));
+
+    assert.equal((await ui.api("/api/reddit/setup", reddit)).status, 202);
+    state = await ui.finished();
+    assert.equal(state.job.status, "failed");
+    assert.match(state.job.message, /Stop it/);
+    assert.equal((await ui.api("/api/reddit/stop", {})).status, 202);
+    state = await ui.finished();
+    assert.equal(
+      state.apps.find((item: { id: string }) => item.id === "reddit").processRunning,
+      false,
+    );
+
+    // Saved keys are reused and the recorded bot ID stays.
+    assert.equal(
+      (await ui.api("/api/reddit/setup", { ...reddit, botToken: "", tunnelKey: "" })).status,
+      202,
+    );
+    state = await ui.finished();
+    assert.equal(state.job.status, "succeeded");
+    app = state.apps.find((item: { id: string }) => item.id === "reddit");
+    assert.equal(app.agentBotId, "900000000000000001");
+    assert.deepEqual(checked, [
+      [reddit.botToken, reddit.outboxChannel, reddit.inboxChannel],
+      [reddit.botToken, reddit.outboxChannel, reddit.inboxChannel],
+    ]);
+  },
+);
+
+test("a Reddit bot that cannot read the channels fails setup with guidance and saves nothing", async (t) => {
+  const ui = await webFixture(t, undefined, {
+    verifyReddit: async () => {
+      throw new Error("The bot cannot read the inbox channel (HTTP 403).");
+    },
+  });
+  const status = await ui.api("/api/reddit/setup", {
+    tunnelId: "tunnel_reddit",
+    tunnelKey: "private-key-fixture",
+    botToken: "private-bot-fixture",
+    outboxChannel: "800000000000000001",
+    inboxChannel: "800000000000000002",
+    bridgeBot: "900000000000000002",
+  });
+  assert.equal(status.status, 202);
+  const state = await ui.finished();
+  assert.equal(state.job.status, "failed");
+  assert.match(state.job.message, /agent bot.*both channel/);
+  assert.ok(!JSON.stringify(state).includes("private-bot-fixture"));
+  assert.equal(state.apps.find((item: { id: string }) => item.id === "reddit").configured, false);
+});
 
 test("jobs survive client refresh and prevent concurrent writes; errors never echo credentials", async (t) => {
   let release!: () => void;

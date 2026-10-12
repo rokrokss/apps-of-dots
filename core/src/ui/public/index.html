@@ -38,6 +38,12 @@
             id="nav-whatsapp"
           ></span>
         </button>
+        <button class="nav-item" data-select="reddit">
+          <span class="nav-icon reddit">r/</span>Reddit<span
+            class="nav-status"
+            id="nav-reddit"
+          ></span>
+        </button>
       </nav>
       <div class="sidebar-bottom">
         <span class="local-light"></span> Running on your computer
@@ -77,7 +83,7 @@
             </div>
           </div>
           <div class="section-heading">
-            <h2>Your apps <span id="app-count">03</span></h2>
+            <h2>Your apps <span id="app-count">04</span></h2>
             <span id="connection-count" class="subtle">Checking connections…</span>
           </div>
           <div id="app-cards" class="cards" aria-label="Available apps"></div>
@@ -330,6 +336,94 @@
                     >
                   </p>
                 </div>
+                <div id="reddit-account" hidden>
+                  <p class="eyebrow">STEP 01 / REDDIT</p>
+                  <h2>Bring your subreddit.</h2>
+                  <p class="panel-intro">
+                    Your dot posts and reads in one subreddit you moderate. A small app on Reddit
+                    handles the Reddit side, and the two talk through two private Discord channels.
+                  </p>
+                  <div class="guide-box">
+                    <strong>Before you start</strong>
+                    <ol>
+                      <li>
+                        Install the
+                        <a
+                          href="https://github.com/rokrokss/apps-of-dots/blob/main/reddit/devvit/README.md"
+                          target="_blank"
+                          rel="noreferrer"
+                          >bridge app ↗</a
+                        >
+                        in your subreddit. It runs on Reddit with its own Discord bot and an inbox
+                        webhook.
+                      </li>
+                      <li>
+                        Create the two private Discord channels it describes, for example
+                        <strong>#reddit-outbox</strong> and <strong>#reddit-inbox</strong>.
+                      </li>
+                      <li>
+                        Choose the agent bot this computer uses; it can be your Discord bot. Give it
+                        <strong>View Channel</strong> and <strong>Read Message History</strong> in
+                        both channels and <strong>Send Messages</strong> in the outbox.
+                      </li>
+                      <li>
+                        In Discord, turn on <strong>Settings → Advanced → Developer Mode</strong>,
+                        then right-click a channel or the bridge bot and choose
+                        <strong>Copy ID</strong>.
+                      </li>
+                    </ol>
+                    <a
+                      href="https://github.com/rokrokss/apps-of-dots/blob/main/reddit/README.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Reddit setup guide ↗</a
+                    >
+                  </div>
+                  <label for="reddit-bot-token"
+                    >Agent bot token
+                    <span id="reddit-bot-saved" class="saved-label" hidden
+                      >Saved on this computer</span
+                    ></label
+                  ><input
+                    id="reddit-bot-token"
+                    type="password"
+                    placeholder="Paste the agent bot’s token"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="4096"
+                  />
+                  <p class="field-help" id="reddit-bot-help">
+                    Stored privately on this computer. It won’t be shown again.
+                  </p>
+                  <label for="outbox-channel">Outbox channel ID</label
+                  ><input
+                    id="outbox-channel"
+                    inputmode="numeric"
+                    placeholder="e.g. 123456789012345678"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="20"
+                  />
+                  <label for="inbox-channel">Inbox channel ID</label
+                  ><input
+                    id="inbox-channel"
+                    inputmode="numeric"
+                    placeholder="e.g. 234567890123456789"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="20"
+                  />
+                  <label for="bridge-bot">Bridge bot user ID</label
+                  ><input
+                    id="bridge-bot"
+                    inputmode="numeric"
+                    placeholder="The bridge app’s bot, not the agent bot"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="20"
+                  />
+                  <p class="field-help">Only this bot’s status replies are trusted.</p>
+                </div>
                 <div class="panel-actions">
                   <span id="account-meta" class="field-help">99 tools · Bot account</span
                   ><button type="button" id="next-step" class="primary">
@@ -474,6 +568,37 @@
                     Sign in again</button
                   ><button class="text-button" id="edit-settings">Edit settings</button>
                 </div>
+              </div>
+              <div id="reddit-handoff" class="panel" hidden>
+                <p class="eyebrow">ON REDDIT</p>
+                <h2>Point the bridge at this bot.</h2>
+                <p class="panel-intro">
+                  The bridge only reads requests from the bot named in its install settings. Until
+                  you set it, your dot’s requests wait in Discord with no answer.
+                </p>
+                <div id="agent-id-row" class="copy-row tunnel-copy">
+                  <div>
+                    <span class="eyebrow">AGENT BOT USER ID</span><code id="agent-bot-id"></code>
+                  </div>
+                  <button class="secondary" id="copy-agent-id">Copy ID</button>
+                </div>
+                <p id="agent-id-missing" class="field-help" hidden>
+                  Setup didn’t check the bot, so its ID wasn’t recorded. In Discord, right-click the
+                  agent bot and choose Copy User ID.
+                </p>
+                <ol class="finish-steps">
+                  <li>
+                    Signed in as a moderator, open
+                    <strong
+                      >developers.reddit.com/r/&lt;subreddit&gt;/apps/&lt;bridge app&gt;</strong
+                    >.
+                  </li>
+                  <li>Paste the ID into <strong>Agent bot user ID</strong> and save.</li>
+                </ol>
+                <p class="field-help">
+                  Posts your dot submits wait under <strong>Review bridge drafts</strong> in the
+                  subreddit’s moderator menu, unless the bridge is set to auto mode.
+                </p>
               </div>
               <div id="finish-guide" class="panel">
                 <p class="eyebrow">STEP 04 / USE WITH AI</p>

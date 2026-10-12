@@ -9,6 +9,14 @@ import {
   verifyBot,
   type SetupStage,
 } from "@apps-of-dots/discord";
+import {
+  configureReddit,
+  controlReddit,
+  loadRedditConfig,
+  readRedditSecrets,
+  redditRuntime,
+  verifyAccess,
+} from "@apps-of-dots/reddit";
 import { executable, quoteCommand, type RuntimeStatus } from "@apps-of-dots/runtime";
 import {
   loadConfig,
@@ -24,12 +32,10 @@ import { telegram } from "@apps-of-dots/telegram";
 import { whatsapp } from "@apps-of-dots/whatsapp";
 import { integrations } from "../catalog.js";
 
-// Reddit is CLI-only for now; the setup center implements Discord, Telegram and WhatsApp.
-const setupCenterApps = integrations.filter(
-  (app): app is Exclude<(typeof integrations)[number], { id: "reddit" }> => app.id !== "reddit",
-);
-
-export type AppId = "discord" | "telegram" | "whatsapp";
+export type AppId = "discord" | "telegram" | "whatsapp" | "reddit";
+// Bot-token apps have no account sign-in step.
+type BotAppId = "discord" | "reddit";
+const isBotApp = (id: AppId): id is BotAppId => id === "discord" || id === "reddit";
 export interface AppView {
   id: string;
   name: string;
@@ -39,6 +45,10 @@ export interface AppView {
   configured: boolean;
   tunnelId?: string;
   guilds?: string;
+  outboxChannelId?: string;
+  inboxChannelId?: string;
+  bridgeBotId?: string;
+  agentBotId?: string;
   apiId?: string;
   bridgePort?: string;
   credentialsSaved?: boolean;
@@ -90,6 +100,7 @@ export function createSetupService(
   home: string,
   options: {
     verify?: typeof verifyBot;
+    verifyReddit?: typeof verifyAccess;
     // Injected only by offline tests; HTTP clients cannot change launchers or verification.
     managed?: Partial<Record<"telegram" | "whatsapp", ManagedIntegration>>;
     loginTimeoutMs?: number;
@@ -102,18 +113,19 @@ export function createSetupService(
   let closed = false;
   const cli = (app: string, action: string) =>
     `pnpm apps-of-dots --home ${quoteCommand([home])} ${app} ${action}`;
-  const appName = (id: AppId) => (id === "discord" ? "Discord" : managed[id].name);
+  const appName = (id: AppId) =>
+    id === "discord" ? "Discord" : id === "reddit" ? "Reddit" : managed[id].name;
   const publicJob = (op: Operation): Job => ({
     ...op.job,
     qr: op.job.qr && op.job.qr.expiresAt > Date.now() ? { ...op.job.qr } : undefined,
   });
 
-  async function appView(app: (typeof setupCenterApps)[number]): Promise<AppView> {
+  async function appView(app: (typeof integrations)[number]): Promise<AppView> {
     const view: AppView = { ...app, configured: false };
     if (app.kind === "external") return view;
     view.commands = [
       "setup",
-      ...(app.id === "discord" ? [] : ["login"]),
+      ...(isBotApp(app.id) ? [] : ["login"]),
       "start",
       "status",
       "doctor",
@@ -132,6 +144,23 @@ export function createSetupService(
           () => false,
         );
         Object.assign(view, publicStatus(await (await discordRuntime(home, config)).status()));
+      } else if (app.id === "reddit") {
+        const config = await loadRedditConfig(home);
+        if (!config) return view;
+        // Channel and bot IDs are public identifiers; the bot token never leaves its file.
+        Object.assign(view, {
+          configured: true,
+          tunnelId: config.tunnelId,
+          outboxChannelId: config.outboxChannelId,
+          inboxChannelId: config.inboxChannelId,
+          bridgeBotId: config.bridgeBotId,
+          agentBotId: config.agentBotId,
+        });
+        view.credentialsSaved = await readRedditSecrets(home, config).then(
+          () => true,
+          () => false,
+        );
+        Object.assign(view, publicStatus(await (await redditRuntime(home, config)).status()));
       } else {
         const config = await loadConfig(home, app.id);
         if (!config) return view;
@@ -165,9 +194,10 @@ export function createSetupService(
   async function snapshot(): Promise<Dashboard> {
     if (!pendingSnapshot) {
       pendingSnapshot = (async () => {
-        const apps = await Promise.all(setupCenterApps.map(appView));
+        const apps = await Promise.all(integrations.map(appView));
         const configs = await Promise.all([
           loadDiscordConfig(home).catch(() => undefined),
+          loadRedditConfig(home).catch(() => undefined),
           loadConfig(home, "telegram").catch(() => undefined),
           loadConfig(home, "whatsapp").catch(() => undefined),
         ]);
@@ -237,7 +267,7 @@ export function createSetupService(
           return;
         }
         op.job.status = "failed";
-        op.job.message = /Stop .*first|Stop Discord/.test(message)
+        op.job.message = /Stop .*first|Stop (Discord|Reddit)/.test(message)
           ? `${appName(app)} is running. Stop it below before changing its settings or signing in.`
           : /is in use/.test(message)
             ? `Another ${appName(app)} operation is running. Finish it and try again.`
@@ -246,7 +276,10 @@ export function createSetupService(
                   "Could not prepare tunnel-client. Install or update it, then try again. Use the diagnostic command for details.",
                 credentials:
                   "Check the tunnel ID and account credentials. For a new setup, all required fields must be filled in.",
-                bot: "Could not verify the Discord bot. Check its bot token and your internet connection, then try again.",
+                bot:
+                  app === "reddit"
+                    ? "Could not verify the agent bot. Check its token, both channel IDs, and that the bot can read both channels, then try again."
+                    : "Could not verify the Discord bot. Check its bot token and your internet connection, then try again.",
                 install: `Could not prepare ${appName(app)}. Install uv${app === "whatsapp" ? ", Go 1.26+ and a C compiler" : ""}, then try again. The diagnostic command can help.`,
                 save: "Could not save settings. Check access to the private data folder and try again.",
                 login:
@@ -329,6 +362,7 @@ export function createSetupService(
   }
   async function control(app: AppId, action: "start" | "stop" | "restart") {
     if (app === "discord") return controlDiscord(home, action);
+    if (app === "reddit") return controlReddit(home, action);
     const runner = await managedRuntime(home, managed[app]);
     if (action === "restart") await runner.stop();
     if (action !== "stop") {
@@ -349,9 +383,9 @@ export function createSetupService(
   }
   function mutateFor(app: AppId, action: string, body: Record<string, unknown>) {
     if (
-      !["discord", "telegram", "whatsapp"].includes(app) ||
+      !["discord", "telegram", "whatsapp", "reddit"].includes(app) ||
       !["setup", "login", "start", "stop", "restart"].includes(action) ||
-      (app === "discord" && action === "login")
+      (isBotApp(app) && action === "login")
     )
       throw new RequestError("Unknown operation.", 404);
     const fields =
@@ -361,9 +395,11 @@ export function createSetupService(
             "tunnelKey",
             ...(app === "discord"
               ? ["botToken", "guilds"]
-              : app === "telegram"
-                ? ["apiId", "apiHash"]
-                : ["bridgePort"]),
+              : app === "reddit"
+                ? ["botToken", "outboxChannel", "inboxChannel", "bridgeBot"]
+                : app === "telegram"
+                  ? ["apiId", "apiHash"]
+                  : ["bridgePort"]),
           ]
         : [];
     if (Object.keys(body).some((key) => !fields.includes(key)))
@@ -381,6 +417,13 @@ export function createSetupService(
         !/^\d{17,20}(\s*,\s*\d{17,20})*$/.test(input.guilds)
       )
         throw new RequestError("Use comma-separated Discord server IDs, or all.");
+      if (
+        app === "reddit" &&
+        ["outboxChannel", "inboxChannel", "bridgeBot"].some(
+          (key) => !/^\d{17,20}$/.test(input[key] ?? ""),
+        )
+      )
+        throw new RequestError("Channel and bot IDs must be Discord IDs (17-20 digits).");
       if (
         app === "telegram" &&
         (!/^[1-9][0-9]*$/.test(input.apiId ?? "") ||
@@ -407,7 +450,10 @@ export function createSetupService(
             {
               runtime: "Checking tunnel-client…",
               credentials: "Checking your settings…",
-              bot: "Verifying your Discord bot…",
+              bot:
+                app === "reddit"
+                  ? "Checking the bot and both channels…"
+                  : "Verifying your Discord bot…",
               install:
                 "Preparing this app on your computer. The first setup may take a few minutes…",
               save: "Saving settings on this computer…",
@@ -416,6 +462,8 @@ export function createSetupService(
         };
         if (app === "discord")
           await configureDiscord(home, input, { verify: options.verify, progress });
+        else if (app === "reddit")
+          await configureReddit(home, input, { verify: options.verifyReddit, progress });
         else {
           await withAppLock(home, app, async () => {
             await requireStopped(home, managed[app]);

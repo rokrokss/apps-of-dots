@@ -117,8 +117,9 @@ pnpm apps-of-dots ui
   <img src="brand/out/setup-center.png" alt="Discord, Telegram, WhatsApp이 표시된 로컬 설정 화면" width="100%" />
 </p>
 
-Discord·Telegram·WhatsApp의 계정·터널 설정부터 상태 확인·시작·중지·ChatGPT에 추가하는 방법까지
-화면에서 안내합니다. Telegram·WhatsApp은 웹에 표시된 QR을 휴대폰으로 스캔하고 승인하면 터널이
+Discord·Telegram·WhatsApp·Reddit의 계정·터널 설정부터 상태 확인·시작·중지·ChatGPT에 추가하는
+방법까지 화면에서 안내합니다. Reddit은 Reddit에 설치하는 브리지 앱 준비 과정과, 그 앱 설정에 넣을 봇
+ID도 함께 보여줍니다. Telegram·WhatsApp은 웹에 표시된 QR을 휴대폰으로 스캔하고 승인하면 터널이
 시작됩니다. QR은 자동 갱신되며 로그인 취소와 새로고침 후 이어하기도 가능합니다. Telegram의 2단계
 비밀번호는 필요한 경우에만 입력하며 해당 로그인에만 사용하고 저장하지 않습니다.
 

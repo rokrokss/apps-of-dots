@@ -119,11 +119,12 @@ pnpm apps-of-dots ui
   <img src="brand/out/setup-center.png" alt="The local setup center overview with Discord, Telegram, and WhatsApp" width="100%" />
 </p>
 
-The local setup center guides Discord, Telegram, and WhatsApp account and tunnel configuration, live
-status, start/stop controls, and adding the app to ChatGPT. Telegram and WhatsApp show QR codes here
-to scan with your phone, refresh expired codes, and start the tunnel after account approval.
-Telegram may request its two-step password; it is used only for that login and is not saved. You can
-cancel login or return to it after refreshing the page.
+The local setup center guides Discord, Telegram, WhatsApp, and Reddit account and tunnel
+configuration, live status, start/stop controls, and adding the app to ChatGPT. For Reddit it also
+walks through the bridge app on Reddit and shows the bot ID to enter there. Telegram and WhatsApp
+show QR codes here to scan with your phone, refresh expired codes, and start the tunnel after
+account approval. Telegram may request its two-step password; it is used only for that login and is
+not saved. You can cancel login or return to it after refreshing the page.
 
 <p align="center">
   <img src="brand/out/telegram-login.png" alt="Signing in to Telegram with a QR code" width="49%" />

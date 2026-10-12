@@ -16,8 +16,9 @@ dot ← tunnel ← apps-of-dots reddit MCP ← #reddit-inbox  ← Devvit bridge 
 
 Posts and replies are made by the bridge's **app account**, labeled as an app by Reddit, and only in
 the subreddit where it is installed. By default a moderator approves each one in Reddit; see the
-bridge's [approval modes](devvit/README.md#approval). There is no setup center card yet; use the
-CLI.
+bridge's [approval modes](devvit/README.md#approval). The
+[setup center](../README.md#local-setup-center) (`pnpm apps-of-dots ui`) walks through the same
+steps as the CLI below.
 
 ## Tools
 
