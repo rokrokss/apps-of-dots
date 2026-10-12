@@ -1,61 +1,78 @@
-# Reddit Devvit probe
+# Reddit bridge (Devvit app)
 
-A throwaway Devvit app that answers three questions before the Discord ↔ Reddit bridge gets built:
+The Devvit side of the Discord ↔ Reddit bridge in [`../PROTOCOL.md`](../PROTOCOL.md). Installed in
+one subreddit you moderate, it:
 
-1. Can a Devvit app `fetch` `discord.com` in playtest and as a private upload, without app review?
-2. Does the bot token return message `content` (Discord's Message Content intent)?
-3. Can the app account `submitPost` in a subreddit you moderate?
+- reads post and reply requests that an agent writes to a Discord outbox channel, once a minute;
+- posts them **as the app account** after a moderator approves them (or automatically, within
+  limits; see [Approval](#approval));
+- answers each request with one status reply that it edits as the request moves on;
+- copies new, visible posts and comments in the subreddit to a Discord inbox channel, and follows
+  Reddit edits and deletions there.
 
-It adds one moderator-only subreddit menu action, **Bridge probe: post latest Discord draft**. The
-action reads the newest message in one Discord channel, parses it as
-`{"title": "...", "text": "..."}`, and posts it to the subreddit as the app account. The toast names
-the step that failed.
+It runs on Reddit's servers. Nothing in apps-of-dots needs to run for it to work, and it never
+receives requests from the internet; it only calls `discord.com`.
 
-This is not the bridge. It reads only the newest message (`limit=1`); the real bridge must page with
-an `after=` cursor, or messages that arrive between polls are lost. It has no scheduler, Redis,
-approval step or Discord status reply. The app runs on Reddit's servers, not on your computer, so it
-has no tunnel or CLI command in apps-of-dots.
+## Approval
 
-## What you need
+`approvalMode` is a per-subreddit setting that any moderator can change.
 
-- The repository installed (`pnpm install --frozen-lockfile` at the root)
-- A Reddit account
-- A Discord server where you can add a bot and create a private channel
+- **Manual (default).** Every valid request waits until a moderator opens **Review bridge drafts**
+  in the subreddit's moderator menu, optionally edits the title and text, and approves or rejects
+  it. The server checks that the user is a moderator.
+- **Auto.** Valid requests are posted without review, at most `maxPostsPerDay` posts and comments in
+  any 24 hours and `minMinutesBetweenPosts` apart (defaults 10 and 30). A post whose title matches
+  one of the last 7 days is rejected.
 
-The first `devvit upload` creates a private playtest subreddit with you as moderator and the app
-installed, so you do not need to create a subreddit.
+Drafts not handled within 7 days expire. A request that Reddit refuses is reported as failed and
+never retried, so it cannot be posted twice.
 
-## Steps
+## Data handling
 
-Run the `devvit` commands from this directory (`reddit/devvit`).
+- Only posts and comments that are still visible when the bridge fetches them are copied; removed,
+  deleted, spam and filtered items are skipped.
+- An edit on Reddit updates the copy. A deletion or removal deletes it. Every copy is deleted 30
+  days after it was sent.
+- Mentions are disabled on everything the bridge sends to Discord.
+- The bridge stores request metadata, its read position and the copy index in the installation's
+  Redis. Request text is dropped once a request is finished.
 
-1. **Create a separate Discord bot** for this app at <https://discord.com/developers/applications>
-   (**New Application**). Do not reuse the apps-of-dots Discord bot; its token would end up in
-   Reddit's secret store. On the **Bot** page:
-   - **Reset Token** and keep the token for step 7. Discord shows it once.
-   - Turn on **Message Content Intent** and save.
-   - Turn off **Public Bot**, so only you can add it to servers.
-2. **Invite it.** On **OAuth2 → URL Generator**, select the `bot` scope and the **View Channels**
-   and **Read Message History** permissions. Open the generated URL and pick your server.
-3. **Make a private channel** (for example `#reddit-outbox`) and add the bot to it. In Discord, turn
-   on **Settings → Advanced → Developer Mode**, then right-click the channel and **Copy Channel
-   ID**. Right-click your own name and **Copy User ID** too.
-4. **Log in and upload.** `login` opens a browser to authorize the CLI. The first `upload` asks you
-   to finish a Reddit developer account and to name the app in the browser, then creates the app
-   (private, visible only to you) and a private playtest subreddit named `<app-name>_dev`. The name
-   becomes the app account's username and cannot be changed; the CLI writes it to `devvit.json`.
-   Note whether `upload` asks for a Terms and Privacy Policy link or a review; that is part of the
-   answer to question 1.
+## Setup
+
+You need the apps-of-dots Discord bot (the **agent**) in a Discord server, and a moderator account
+for the subreddit. The first `devvit upload` creates a private playtest subreddit,
+`r/<app-name>_dev`, that you can use.
+
+### Discord
+
+1. **Create a separate bridge bot** at <https://discord.com/developers/applications>. Do not reuse
+   the agent bot; the bridge bot's token is stored at Reddit. On **Bot**: **Reset Token** and keep
+   it, turn on **Message Content Intent**, and turn off **Public Bot** (if Discord refuses, first
+   set **Installation → Install Link** to **None**).
+2. **Make two private channels**, for example `#reddit-outbox` and `#reddit-inbox`.
+3. **Invite the bridge bot** with **OAuth2 → URL Generator**: scope `bot`, permissions **View
+   Channels**, **Read Message History** and **Send Messages**. Give it access to the outbox only.
+4. Give the **agent bot** access to both channels.
+5. **Create the inbox webhook:** inbox channel → **Edit Channel → Integrations → Webhooks → New
+   Webhook → Copy Webhook URL**.
+6. Turn on **Settings → Advanced → Developer Mode**. Copy the outbox **channel ID** and the agent
+   bot's **user ID** (right-click the bot).
+
+### Devvit
+
+Run these from this directory (`reddit/devvit`).
+
+1. **Log in and upload.** The first upload asks you to set up a Reddit developer account and name
+   the app; the name becomes the app account's username and cannot be changed.
 
    ```sh
    pnpm exec devvit login
    pnpm exec devvit upload
    ```
 
-5. **Undo the first upload's project setup.** The CLI treats this directory as a new standalone
-   project: it runs `git init`, installs with npm (`package-lock.json`), creates an empty `.env`,
-   and rewrites `package.json`. Remove those and restore the workspace install from the repository
-   root:
+2. **Undo the first upload's project setup.** The CLI treats this directory as a new project: it
+   runs `git init`, installs with npm (`package-lock.json`), creates an empty `.env`, and rewrites
+   `package.json`. Remove those and restore the workspace install:
 
    ```sh
    rm -rf .git package-lock.json .env
@@ -63,59 +80,53 @@ Run the `devvit` commands from this directory (`reddit/devvit`).
    cd ../.. && pnpm install --frozen-lockfile && cd reddit/devvit
    ```
 
-6. **Start playtest.** It prints the playtest subreddit link and streams logs; keep it running:
-
-   ```sh
-   pnpm exec devvit playtest
-   ```
-
-7. In another terminal, **store the bot token**. Secrets can only be set after the app has an
-   installation, so step 4 comes first. Paste the token at the prompt:
+3. **Store the secrets.** The prompt echoes what you paste, so clear the terminal afterwards:
 
    ```sh
    pnpm exec devvit settings set discordBotToken
+   pnpm exec devvit settings set inboxWebhookUrl
    ```
 
-   The prompt echoes the token. Clear the terminal afterwards, and reset the token in Discord if the
-   scrollback was shared or recorded.
+4. **Configure the installation** at `https://developers.reddit.com/r/<subreddit>/apps/<app-name>`:
+   **Outbox channel ID**, **Agent bot user ID**, and the approval settings.
+5. **Install a new version** after code changes, either with a live playtest that streams logs or
+   with an upload:
 
-8. **Configure the installation** at
-   `https://developers.reddit.com/r/<playtest_subreddit>/apps/<app-name>`. Set **Discord channel ID
-   to read drafts from** to the channel ID, and **Only accept drafts from this Discord user ID** to
-   your user ID. Save.
-9. **Post a draft** in the Discord channel as yourself:
-
-   ```json
-   { "title": "Bridge probe test", "text": "Posted from Discord by a Devvit app." }
+   ```sh
+   pnpm exec devvit playtest <subreddit>
+   pnpm exec devvit upload && pnpm exec devvit install <subreddit>
    ```
 
-10. **Run the probe.** Open the playtest subreddit, open its three-dot menu, and choose **Bridge
-    probe: post latest Discord draft**. Read the toast, then check that a post by the app account
-    appeared.
-11. **Repeat with the uploaded build.** Stop playtest with Ctrl+C, reinstall the uploaded version,
-    post a new draft, and run the probe again:
+The first poll after installation records the newest outbox message and ignores everything before
+it.
 
-    ```sh
-    pnpm exec devvit install <playtest_subreddit>
-    pnpm exec devvit logs <playtest_subreddit>
-    ```
+## Try it
 
-## Reading the result
+From the agent bot (for example with the apps-of-dots Discord MCP's `discord_send_message`), write
+to the outbox. To test by hand first, set **Agent bot user ID** to your own Discord user ID, type
+the request yourself, and switch it back afterwards:
 
-| Toast                                   | Answer                                                                                                                                                                                                                                                                                 |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `3/3 posted as the app account: <url>`  | All three questions are yes for this mode (playtest or upload)                                                                                                                                                                                                                         |
-| `1/3 Discord fetch: HTTP 401`           | Wrong bot token                                                                                                                                                                                                                                                                        |
-| `1/3 Discord fetch: HTTP 403`           | The bot cannot see the channel; check its channel permissions                                                                                                                                                                                                                          |
-| `1/3 Discord fetch: …` (other)          | The app could not reach `discord.com` in this mode. Domain requests are reviewed when you playtest or upload, usually within 1–2 business days, so check whether `discord.com` shows as approved at `https://developers.reddit.com/apps/<app-name>/developer-settings` and retry first |
-| `2/3 parse: message content is empty …` | Message Content intent is off for this bot                                                                                                                                                                                                                                             |
-| `2/3 parse: …` (other)                  | The newest message is not a valid draft                                                                                                                                                                                                                                                |
-| `3/3 submitPost: …`                     | Posting as the app account failed; the error says why                                                                                                                                                                                                                                  |
+```json
+{ "v": 1, "op": "post", "ref": "hello-1", "title": "Hello from the bridge", "text": "First post." }
+```
 
-Playtest streams logs; after an upload, run `pnpm exec devvit logs your_test_subreddit`.
+Within a minute the bridge replies `{"v":1,"ref":"hello-1","status":"queued"}`. Open the subreddit's
+three-dot menu → **Review bridge drafts**, approve it, and the reply changes to `posted` with the
+post's URL. A post or comment in the subreddit then appears in the inbox channel.
+
+Logs: `pnpm exec devvit logs <subreddit>`.
+
+## Known limits
+
+- If editing a status reply fails after a request is finished, that reply stays out of date; the
+  request itself is not run again.
+- A post that AutoModerator filters and a moderator approves later is not copied to the inbox,
+  because the bridge only copies items that are visible when they are created.
 
 ## Development
 
-`pnpm build`, `pnpm typecheck` and `pnpm test` at the repository root include this package. The unit
-tests cover draft parsing only; the menu handler runs only inside Devvit. Devvit tooling is a dev
-dependency because the server is bundled into `dist/server/index.cjs` before upload.
+`pnpm build`, `pnpm typecheck` and `pnpm test` at the repository root include this package. The
+tests run the outbox, approval and inbox logic against in-memory Redis, Discord and Reddit fakes;
+the Devvit wiring in `src/devvit.ts`, `src/review.ts` and `src/index.ts` runs only inside Devvit.
+Devvit tooling is a dev dependency because the server is bundled into `dist/server/index.cjs` before
+upload.
