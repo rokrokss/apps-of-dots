@@ -64,6 +64,17 @@ type State = {
   watched?: string[];
   /** The newest inbox message the watcher has seen; absent until its first scan. */
   inboxCursor?: string;
+  /** The last delivery attempt, for status. */
+  lastDelivery?: { at: number; eventId: string; name: string; status: number; error?: string };
+  /** When each event's last subscription ended, until a new one starts. */
+  ended?: Record<string, number>;
+};
+
+export type EventStatus = {
+  events: { name: string; subscriptions: number; pending: number; endedAt?: string }[];
+  /** Deliveries waiting to be sent or retried. */
+  queued: number;
+  lastDelivery?: { at: string; event: string; status: number; error?: string };
 };
 
 export interface StateFile {
@@ -286,6 +297,7 @@ export class EventHub {
       subscription.rotationUntil = existing.rotationUntil;
     }
     this.state.subscriptions[id] = subscription;
+    if (this.state.ended) delete this.state.ended[p.name];
     await this.save();
     this.log(`subscribed ${id}${existing ? " (refresh)" : ""}`);
     return { id, refreshBefore: null, cursor: null, truncated: false };
@@ -295,10 +307,17 @@ export class EventHub {
     const p = parseParams(raw);
     const id = subscriptionId(p.name, p.delivery.url);
     if (!this.state.subscriptions[id]) return;
-    delete this.state.subscriptions[id];
-    this.state.outbox = this.state.outbox.filter((o) => o.subscriptionId !== id);
+    this.end(id, this.now());
     await this.save();
     this.log(`unsubscribed ${id}`);
+  }
+
+  private end(id: string, now: number): void {
+    const { name } = this.state.subscriptions[id]!;
+    delete this.state.subscriptions[id];
+    this.state.outbox = this.state.outbox.filter((o) => o.subscriptionId !== id);
+    if (!Object.values(this.state.subscriptions).some((s) => s.name === name))
+      (this.state.ended ??= {})[name] = now;
   }
 
   /**
@@ -411,12 +430,18 @@ export class EventHub {
     }
     const { status } = result;
     const label = `${event.eventId} to ${subscription.id}`;
+    this.state.lastDelivery = {
+      at: now,
+      eventId: event.eventId,
+      name: event.name,
+      status,
+      ...(failure ? { error: failure } : {}),
+    };
     if (!failure && status >= 200 && status <= 299) {
       this.state.outbox = this.state.outbox.filter((o) => !same(o));
       this.log(`delivered ${label}`);
     } else if (!failure && status === 410) {
-      delete this.state.subscriptions[subscription.id];
-      this.state.outbox = this.state.outbox.filter((o) => o.subscriptionId !== subscription.id);
+      this.end(subscription.id, now);
       this.log(`subscription ${subscription.id} ended: the callback answered 410`);
     } else if (!failure && !retryable(status)) {
       this.state.outbox = this.state.outbox.filter((o) => !same(o));
@@ -496,4 +521,53 @@ export class EventHub {
     this.saving = this.saving.catch(() => undefined).then(() => this.options.file.write(value));
     return this.saving;
   }
+}
+
+/** A summary for status pages, read without writing. It has no callback URLs or secrets. */
+export async function eventStatus(file: StateFile): Promise<EventStatus> {
+  const raw = await file.read();
+  const state = raw === undefined ? undefined : parseState(raw);
+  const subscriptions = Object.values(state?.subscriptions ?? {});
+  const last = state?.lastDelivery;
+  return {
+    events: EVENT_NAMES.map((name) => {
+      const endedAt = state?.ended?.[name];
+      return {
+        name,
+        subscriptions: subscriptions.filter((s) => s.name === name).length,
+        pending: (state?.inbox ?? []).filter((e) => e.name === name && e.ackedAt === undefined)
+          .length,
+        ...(endedAt ? { endedAt: new Date(endedAt).toISOString() } : {}),
+      };
+    }),
+    queued: state?.outbox.length ?? 0,
+    ...(last
+      ? {
+          lastDelivery: {
+            at: new Date(last.at).toISOString(),
+            event: last.name,
+            status: last.status,
+            ...(last.error ? { error: last.error } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+/** Events, then the last delivery, on one line for terminals. */
+export function describeEvents(status: EventStatus): string {
+  const parts = status.events.map(({ name, subscriptions, pending, endedAt }) => {
+    const state = subscriptions
+      ? `subscribed (${subscriptions})`
+      : endedAt
+        ? `subscription ended ${endedAt} (ask your dot to subscribe again)`
+        : "not subscribed";
+    return `${name} ${state}, ${pending} pending`;
+  });
+  const last = status.lastDelivery;
+  if (last)
+    parts.push(
+      `last delivery ${last.at} ${last.event}: ${last.error ?? `HTTP ${last.status}`}, ${status.queued} queued`,
+    );
+  return parts.join(" | ");
 }

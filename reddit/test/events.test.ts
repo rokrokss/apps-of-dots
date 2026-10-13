@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import {
   ACTIVITY_CREATED,
   DRAFT_FINISHED,
+  describeEvents,
   EventError,
   EventHub,
+  eventStatus,
   sign,
   signingKey,
   type Post,
@@ -14,6 +16,7 @@ import { scanActivity, scanDrafts } from "../src/drafts.js";
 import { AGENT, BRIDGE, channels, connect, FakeDiscord } from "./fakes.js";
 
 const URL_A = "https://connectors.api.openai.com/mcp/events/a";
+const URL_B = "https://connectors.api.openai.com/mcp/events/b";
 const SECRET = "whsec_" + Buffer.alloc(32, 1).toString("base64");
 const SECRET_2 = "whsec_" + Buffer.alloc(32, 2).toString("base64");
 const START = Date.UTC(2026, 9, 12);
@@ -530,4 +533,57 @@ test("pending activity carries the item's current text, or null once Reddit dele
     [undefined],
   );
   assert.equal((await call("reddit_get_pending_events")).events.length, 3);
+});
+
+test("status shows subscriptions, pending events and the last delivery, not URLs or secrets", async () => {
+  const target = callback();
+  const { hub, file, advance } = await open(new MemoryFile(), target.post);
+  const empty = {
+    events: [
+      { name: DRAFT_FINISHED, subscriptions: 0, pending: 0 },
+      { name: ACTIVITY_CREATED, subscriptions: 0, pending: 0 },
+    ],
+    queued: 0,
+  };
+  assert.deepEqual(await eventStatus(file), empty);
+  assert.match(describeEvents(empty), /^reddit\.draft\.finished not subscribed, 0 pending \| /);
+
+  await hub.subscribe(subscribeParams());
+  await hub.subscribe({ ...subscribeParams(), name: ACTIVITY_CREATED });
+  target.answer = { status: 500 };
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a" });
+  await hub.deliverDue();
+  let status = await eventStatus(file);
+  assert.deepEqual(
+    status.events.map((e) => [e.subscriptions, e.pending]),
+    [
+      [1, 1],
+      [1, 0],
+    ],
+  );
+  assert.deepEqual(status.lastDelivery, {
+    at: new Date(START).toISOString(),
+    event: DRAFT_FINISHED,
+    status: 500,
+  });
+  assert.equal(status.queued, 1);
+  for (const secret of [SECRET, URL_A]) assert.ok(!JSON.stringify(status).includes(secret));
+  assert.match(describeEvents(status), /reddit\.draft\.finished: HTTP 500, 1 queued$/);
+
+  // A 410 or an unsubscribe ends an event's last subscription; subscribing again clears it.
+  advance(5_000);
+  target.answer = { status: 410 };
+  await hub.deliverDue();
+  status = await eventStatus(file);
+  assert.equal(status.events[0].subscriptions, 0);
+  assert.equal(status.events[0].endedAt, new Date(START + 5_000).toISOString());
+  assert.match(describeEvents(status), /subscription ended .* \(ask your dot to subscribe again\)/);
+  // Another dot's subscription to the same event keeps it going.
+  await hub.subscribe({ ...subscribeParams(SECRET, URL_B), name: ACTIVITY_CREATED });
+  await hub.unsubscribe({ name: ACTIVITY_CREATED, delivery: { url: URL_A } });
+  assert.equal((await eventStatus(file)).events[1].endedAt, undefined);
+  await hub.unsubscribe({ name: ACTIVITY_CREATED, delivery: { url: URL_B } });
+  assert.ok((await eventStatus(file)).events[1].endedAt);
+  await hub.subscribe(subscribeParams());
+  assert.equal((await eventStatus(file)).events[0].endedAt, undefined);
 });

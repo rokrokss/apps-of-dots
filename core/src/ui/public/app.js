@@ -108,13 +108,13 @@ function renderCards() {
     { id: "discord", name: "Discord", tools: 99 },
     { id: "telegram", name: "Telegram", tools: 139 },
     { id: "whatsapp", name: "WhatsApp", tools: 17 },
-    { id: "reddit", name: "Reddit", tools: 7 },
+    { id: "reddit", name: "Reddit", tools: 7, events: true },
   ];
   const markup = cards
     .map((app) => {
       const badge = status(app);
       const action = app.configured ? "Manage connection" : `Connect ${app.name}`;
-      return `<article class="app-card"><div class="card-top"><div class="app-icon ${app.id}" aria-hidden="true">${icons[app.id]}</div><span class="badge ${badge.style}">${badge.text}</span></div><h3>${app.name}</h3><p>${descriptions[app.id]}</p><div class="card-meta"><span>${app.tools} tools</span><i></i><span>${accountKind(app.id)}</span></div><button class="card-button" data-select="${app.id}">${action}<span aria-hidden="true">↗</span></button></article>`;
+      return `<article class="app-card"><div class="card-top"><div class="app-icon ${app.id}" aria-hidden="true">${icons[app.id]}</div><span class="badge ${badge.style}">${badge.text}</span></div><h3>${app.name}</h3><p>${descriptions[app.id]}</p><div class="card-meta"><span>${app.tools} tools${app.events ? " + events" : ""}</span><i></i><span>${accountKind(app.id)}</span></div><button class="card-button" data-select="${app.id}">${action}<span aria-hidden="true">↗</span></button></article>`;
     })
     .join("");
   // Preserve keyboard focus when polling returns unchanged cards.
@@ -200,7 +200,8 @@ function selectApp(id) {
   $("detail-icon").textContent = icons[id];
   $("detail-description").textContent = descriptions[id];
   for (const name of apps) $(name + "-account").hidden = name !== id;
-  $("account-meta").textContent = `${app.tools || ""} tools · ${accountKind(id)}`;
+  $("account-meta").textContent =
+    `${app.tools || ""} tools${app.events ? " + events" : ""} · ${accountKind(id)}`;
   $("tunnel-app-title").textContent = `Create a tunnel for ${app.name}`;
   $("setup-summary").textContent =
     id === "discord"
@@ -272,6 +273,35 @@ async function renderLogin(job) {
   }
   $("password-form").hidden = !challenge;
 }
+// Reddit's MCP Events: whether a dot subscribed, and how the last delivery went.
+function renderEvents(app) {
+  const shown = selected === "reddit" && app.configured;
+  $("reddit-events").hidden = !shown;
+  if (!shown) return;
+  const status = app.eventStatus;
+  for (const [id, name] of [
+    ["draft", "reddit.draft.finished"],
+    ["activity", "reddit.activity.created"],
+  ]) {
+    const event = status?.events.find((item) => item.name === name);
+    const waiting = event?.pending ? ` · ${event.pending} waiting` : "";
+    $(`event-status-${id}`).textContent = !event
+      ? ""
+      : event.subscriptions
+        ? `Subscribed${waiting}`
+        : event.endedAt
+          ? "Subscription ended · subscribe again"
+          : "Not subscribed";
+  }
+  const last = status?.lastDelivery;
+  const when = last && new Date(last.at).toLocaleString();
+  $("event-delivery").textContent = !last
+    ? "No events delivered yet."
+    : last.status >= 200 && last.status < 300
+      ? `Last delivery ${when}: accepted.`
+      : `Last delivery ${when} failed (${last.error || `HTTP ${last.status}`}).` +
+        (status.queued ? ` ${status.queued} waiting to retry.` : "");
+}
 function renderDetail() {
   if (selected === "overview") return;
   const app = appById(selected);
@@ -311,6 +341,7 @@ function renderDetail() {
   $("copy-agent-id").dataset.copy = app.agentBotId || "";
   $("agent-id-row").hidden = !app.agentBotId;
   $("agent-id-missing").hidden = Boolean(app.agentBotId);
+  renderEvents(app);
   $("saved-tunnel").textContent = app.tunnelId || "";
   document.querySelectorAll("[data-action]").forEach((button) => {
     button.disabled = Boolean(busy);

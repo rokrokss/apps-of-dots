@@ -242,6 +242,17 @@ test(
     assert.equal(app.credentialsSaved, true);
     assert.equal(app.agentBotId, "900000000000000001");
     assert.equal(app.bridgeBotId, reddit.bridgeBot);
+    assert.equal(app.events, true);
+    assert.deepEqual(
+      app.eventStatus.events.map((e: { name: string; subscriptions: number }) => [
+        e.name,
+        e.subscriptions,
+      ]),
+      [
+        ["reddit.draft.finished", 0],
+        ["reddit.activity.created", 0],
+      ],
+    );
     assert.ok(!app.commands.join("\n").includes("login"));
     for (const secret of [reddit.botToken, reddit.tunnelKey])
       assert.ok(!JSON.stringify(state).includes(secret));

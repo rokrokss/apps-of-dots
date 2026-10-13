@@ -14,8 +14,14 @@ import {
   saveConfig,
   type RedditConfig,
 } from "./config.js";
+import { eventStatus, stateFile } from "./events.js";
 import { runtime } from "./runtime.js";
 import { TOOL_COUNT } from "./server.js";
+
+/** MCP Events subscriptions, pending events and the last delivery, for status pages. */
+export function redditEventStatus(home: string) {
+  return eventStatus(stateFile(home));
+}
 
 export type SetupStage = "runtime" | "credentials" | "bot" | "save";
 

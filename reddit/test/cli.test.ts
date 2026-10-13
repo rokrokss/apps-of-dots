@@ -45,7 +45,12 @@ test(
     assert.ok(!setup.stdout.includes("fake-bot-token"));
     assert.equal((await loadConfig(home))?.inboxChannelId, "800000000000000002");
     assert.equal(JSON.parse((await command("start", "--json")).stdout).ready, true);
-    assert.equal(JSON.parse((await command("status", "--json")).stdout).processRunning, true);
+    const status = JSON.parse((await command("status", "--json")).stdout);
+    assert.equal(status.processRunning, true);
+    assert.deepEqual(
+      status.events.events.map((e: { name: string; subscriptions: number }) => e.subscriptions),
+      [0, 0],
+    );
     await assert.rejects(command("setup", "--skip-validation", "--json"), /Stop Reddit/);
     await writeFile(
       join(home, "tunnel-state", "apps-of-dots-reddit.log"),

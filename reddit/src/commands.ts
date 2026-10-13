@@ -15,14 +15,18 @@ import { loadConfig, requireConfig, readSecrets } from "./config.js";
 import { setup, type SetupOptions } from "./setup.js";
 import { inspectTools, runServer, TOOL_COUNT, SERVER_VERSION } from "./server.js";
 import { runtime } from "./runtime.js";
-import { controlReddit, verifyAccess } from "./service.js";
+import { controlReddit, redditEventStatus, verifyAccess } from "./service.js";
+import { describeEvents, type EventStatus } from "./events.js";
 
-function printStatus(status: RuntimeStatus, json: boolean): void {
+function printStatus(status: RuntimeStatus, json: boolean, events?: EventStatus | string): void {
   print(
     {
       ...status,
       reddit:
         "Tools reach Reddit through the Devvit bridge's Discord channels; tunnel readiness does not check the bridge.",
+      ...(events
+        ? { events: json || typeof events === "string" ? events : describeEvents(events) }
+        : {}),
     },
     json,
   );
@@ -48,6 +52,7 @@ async function doctor(home: string, live: boolean) {
     await readSecrets(home, config);
     return "Configuration and credential files are present.";
   });
+  await check("MCP events", async () => describeEvents(await redditEventStatus(home)));
   const config = await loadConfig(home).catch(() => undefined);
   let status: RuntimeStatus | undefined;
   if (config) {
@@ -133,7 +138,12 @@ export function registerReddit(program: Command, home: () => string): void {
         );
         return;
       }
-      printStatus(await (await runtime(directory, config)).status(), Boolean(options.json));
+      printStatus(
+        await (await runtime(directory, config)).status(),
+        Boolean(options.json),
+        // An unreadable events file stops the MCP server; say so without hiding the tunnel state.
+        await redditEventStatus(directory).catch((error: Error) => error.message),
+      );
     });
 
   reddit

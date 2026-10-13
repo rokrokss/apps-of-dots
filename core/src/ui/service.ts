@@ -14,7 +14,9 @@ import {
   controlReddit,
   loadRedditConfig,
   readRedditSecrets,
+  redditEventStatus,
   redditRuntime,
+  type RedditEventStatus,
   verifyAccess,
 } from "@apps-of-dots/reddit";
 import { executable, quoteCommand, type RuntimeStatus } from "@apps-of-dots/runtime";
@@ -49,6 +51,8 @@ export interface AppView {
   inboxChannelId?: string;
   bridgeBotId?: string;
   agentBotId?: string;
+  /** Reddit's MCP Events: subscriptions, pending events and the last delivery. */
+  eventStatus?: RedditEventStatus;
   apiId?: string;
   bridgePort?: string;
   credentialsSaved?: boolean;
@@ -161,6 +165,11 @@ export function createSetupService(
           () => false,
         );
         Object.assign(view, publicStatus(await (await redditRuntime(home, config)).status()));
+        // An unreadable events file stops the MCP server, so it is the app's issue.
+        await redditEventStatus(home).then(
+          (events) => (view.eventStatus = events),
+          (error: Error) => (view.issue ??= error.message),
+        );
       } else {
         const config = await loadConfig(home, app.id);
         if (!config) return view;
