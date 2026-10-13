@@ -550,3 +550,13 @@ test(
     await withAppLock(closing.home, "whatsapp", async () => {});
   },
 );
+
+test("the setup center's event prompts match the Reddit guide", async () => {
+  const html = await readFile(new URL("../src/ui/public/index.html", import.meta.url), "utf8");
+  const guide = await readFile(new URL("../../reddit/README.md", import.meta.url), "utf8");
+  const prompts = [...html.matchAll(/data-copy="(Subscribe to the reddit\.[^"]+)"/g)].map(
+    (match) => match[1]!,
+  );
+  assert.equal(prompts.length, 2);
+  for (const prompt of prompts) assert.ok(guide.includes(prompt), prompt);
+});
