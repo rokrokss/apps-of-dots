@@ -70,7 +70,8 @@ Reddit content copied to the inbox channel is deleted when it is deleted or remo
 after 30 days in any case. The MCP stores no posts or comments locally. For MCP Events, the tunnel's
 server keeps `reddit/events.json` (mode 0600) in the private data directory: each subscription's
 callback URL and signing secret, and an event inbox with draft refs, states, titles, links and
-rejection notes. Events are sent over HTTPS only to OpenAI's callback host,
-`connectors.api.openai.com`, without following redirects. Content an agent has already read cannot
-be recalled from wherever it went. Using the bridge is subject to Reddit's terms and policies for
-apps.
+rejection notes, and the IDs and links of new posts and comments. Activity events hold no text; it
+is read from the inbox channel when an agent asks, so deletions on Reddit still apply. Events are
+sent over HTTPS only to OpenAI's callback host, `connectors.api.openai.com`, without following
+redirects. Content an agent has already read cannot be recalled from wherever it went. Using the
+bridge is subject to Reddit's terms and policies for apps.

@@ -212,9 +212,10 @@ pnpm apps-of-dots reddit status
 Setup checks that the bot can read both channels and prints its user ID; enter that ID as **Agent
 bot user ID** in the bridge's install settings on Reddit, or the bridge ignores every request. Posts
 and replies come from the bridge's app account and, by default, wait for a moderator to approve them
-in Reddit. Reddit is the one integration with an OpenAI MCP Event: `reddit.draft.finished` wakes a
-subscribed dot when a draft is posted, rejected, failed or expired. See the
-[Reddit guide](reddit/README.md) for the seven tools, the event and their limits.
+in Reddit. Reddit is the one integration with OpenAI MCP Events: `reddit.draft.finished` wakes a
+subscribed dot when a draft is posted, rejected, failed or expired, and `reddit.activity.created`
+when someone posts or comments in the subreddit. See the [Reddit guide](reddit/README.md) for the
+seven tools, the events and their limits.
 
 ## Everyday commands
 

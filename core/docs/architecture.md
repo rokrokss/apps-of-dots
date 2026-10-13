@@ -77,12 +77,13 @@ flowchart LR
     Bridge <-->|Approve, post, read| Subreddit[Subreddit]
     Bridge -->|Webhook copies| Inbox["#reddit-inbox"]
     Inbox --> MCP
-    MCP -.->|reddit.draft.finished| Callback[OpenAI event callback]
+    MCP -.->|Draft and activity events| Callback[OpenAI event callback]
 ```
 
 The local MCP runs in-process under the same managed tunnel lifecycle as Discord, keeps no Reddit
 posts or comments, and reads Discord on each call. The same process answers MCP 2026-07-28 requests
-next to the SDK's handshake, reads the outbox every 30 seconds for finished drafts, and delivers
-`reddit.draft.finished` to subscribed dots as signed webhooks. Its subscriptions and event inbox are
-in `reddit/events.json`. The bridge keeps request metadata, its read position and the copy index in
-the installation's Redis on Reddit.
+next to the SDK's handshake, reads the outbox and the inbox every 30 seconds for finished drafts and
+new posts and comments, and delivers `reddit.draft.finished` and `reddit.activity.created` to
+subscribed dots as signed webhooks. Its subscriptions and event inbox are in `reddit/events.json`.
+The bridge keeps request metadata, its read position and the copy index in the installation's Redis
+on Reddit.
