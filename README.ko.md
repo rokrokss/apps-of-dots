@@ -178,8 +178,8 @@ pnpm apps-of-dots reddit status
 앱 설치 설정에서 **Agent bot user ID**에 넣어야 하며, 넣지 않으면 브리지가 모든 요청을 무시합니다.
 글과 답글은 브리지의 앱 계정으로 올라가고, 기본값에서는 모더레이터가 Reddit에서 승인해야 게시됩니다.
 도구 7개와 이벤트, 제한은 [Reddit 가이드](reddit/README.md)를 참고하세요. Reddit은 OpenAI MCP
-Events를 제공하는 유일한 연동입니다. 초안이 게시·거절·실패·만료되면 `reddit.draft.finished`가,
-서브레딧에 새 글이나 댓글이 올라오면 `reddit.activity.created`가 구독한 dot을 깨웁니다.
+Events를 하나 제공하는 유일한 연동입니다. 초안이 게시·거절·실패·만료되면 `reddit.draft.finished`가
+구독한 dot을 깨웁니다.
 
 ## 운영
 
