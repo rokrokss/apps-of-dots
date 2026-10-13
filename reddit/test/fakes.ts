@@ -2,7 +2,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer, type Channels } from "../src/server.js";
 import type { ApiMessage, DiscordApi } from "../src/discord.js";
-import type { EventHub } from "../src/events.js";
 import type { Framed } from "../src/protocol.js";
 
 export const AGENT = "900000000000000001";
@@ -39,13 +38,10 @@ export class FakeDiscord implements DiscordApi {
     }
     return list.reverse().slice(0, page.limit);
   }
-  async message(channelId: string, messageId: string) {
-    return this.stored.get(channelId)?.find((m) => m.id === messageId);
-  }
 }
 
-export async function connect(discord: DiscordApi, events?: EventHub) {
-  const server = createServer(discord, channels, events);
+export async function connect(discord: DiscordApi) {
+  const server = createServer(discord, channels);
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "test", version: "0.0.0" });
   await server.connect(serverSide);

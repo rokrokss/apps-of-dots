@@ -8,8 +8,6 @@ import { privateWrite, readOptional } from "@apps-of-dots/runtime";
 // (https://www.standardwebhooks.com/). The tunnel's server is the only writer of the state file.
 
 export const DRAFT_FINISHED = "reddit.draft.finished";
-export const ACTIVITY_CREATED = "reddit.activity.created";
-const EVENT_NAMES = [DRAFT_FINISHED, ACTIVITY_CREATED];
 export const CALLBACK_HOSTS = ["connectors.api.openai.com"];
 
 const MINUTE = 60_000;
@@ -33,7 +31,6 @@ export class EventError extends Error {
 
 type Subscription = {
   id: string;
-  name: string;
   url: string;
   secret: string;
   previousSecret?: string;
@@ -62,19 +59,19 @@ type State = {
   outbox: OutboxItem[];
   /** Finished drafts the watcher has already seen; absent until its first scan. */
   watched?: string[];
-  /** The newest inbox message the watcher has seen; absent until its first scan. */
-  inboxCursor?: string;
   /** The last delivery attempt, for status. */
-  lastDelivery?: { at: number; eventId: string; name: string; status: number; error?: string };
-  /** When each event's last subscription ended, until a new one starts. */
-  ended?: Record<string, number>;
+  lastDelivery?: { at: number; eventId: string; status: number; error?: string };
+  /** When the last subscription ended, until a new one starts. */
+  endedAt?: number;
 };
 
 export type EventStatus = {
-  events: { name: string; subscriptions: number; pending: number; endedAt?: string }[];
+  subscriptions: number;
+  pending: number;
+  endedAt?: string;
   /** Deliveries waiting to be sent or retried. */
   queued: number;
-  lastDelivery?: { at: string; event: string; status: number; error?: string };
+  lastDelivery?: { at: string; status: number; error?: string };
 };
 
 export interface StateFile {
@@ -147,9 +144,11 @@ function checkCallback(raw: string, hosts: readonly string[]): void {
     throw new Error(`callback host ${url.hostname} is not allowed`);
 }
 
-/** Stable per event and callback URL; the events take no arguments. */
-function subscriptionId(name: string, url: string): string {
-  return "sub_" + createHash("sha256").update(`${name}\0${url}`).digest("hex").slice(0, 32);
+/** Stable per callback URL: one event, no arguments. */
+function subscriptionId(url: string): string {
+  return (
+    "sub_" + createHash("sha256").update(`${DRAFT_FINISHED}\0${url}`).digest("hex").slice(0, 32)
+  );
 }
 
 const params = z.object({
@@ -167,7 +166,7 @@ function parseParams(raw: unknown) {
   const parsed = params.safeParse(raw);
   if (!parsed.success) throw new EventError(-32602, "invalid params");
   const p = parsed.data;
-  if (!EVENT_NAMES.includes(p.name)) throw new EventError(-32602, `unknown event ${p.name}`);
+  if (p.name !== DRAFT_FINISHED) throw new EventError(-32602, `unknown event ${p.name}`);
   if (p.arguments && Object.keys(p.arguments).length > 0)
     throw new EventError(-32602, "this event takes no arguments");
   return p;
@@ -188,12 +187,8 @@ function parseState(raw: string): State {
       typeof state.subscriptions === "object" &&
       Array.isArray(state.inbox) &&
       Array.isArray(state.outbox)
-    ) {
-      // Subscriptions saved before there were two events are for finished drafts.
-      for (const subscription of Object.values(state.subscriptions))
-        subscription.name ??= DRAFT_FINISHED;
+    )
       return state;
-    }
   } catch {
     // Reported below.
   }
@@ -267,7 +262,7 @@ export class EventHub {
         reason: "invalid_url",
       });
     }
-    const id = subscriptionId(p.name, p.delivery.url);
+    const id = subscriptionId(p.delivery.url);
     const existing = this.state.subscriptions[id];
     // A refresh with the secret already verified skips the challenge.
     if (existing?.secret !== secret) {
@@ -283,7 +278,6 @@ export class EventHub {
     const now = this.now();
     const subscription: Subscription = {
       id,
-      name: p.name,
       url: p.delivery.url,
       secret,
       createdAt: existing?.createdAt ?? now,
@@ -297,15 +291,14 @@ export class EventHub {
       subscription.rotationUntil = existing.rotationUntil;
     }
     this.state.subscriptions[id] = subscription;
-    if (this.state.ended) delete this.state.ended[p.name];
+    delete this.state.endedAt;
     await this.save();
     this.log(`subscribed ${id}${existing ? " (refresh)" : ""}`);
     return { id, refreshBefore: null, cursor: null, truncated: false };
   }
 
   async unsubscribe(raw: unknown): Promise<void> {
-    const p = parseParams(raw);
-    const id = subscriptionId(p.name, p.delivery.url);
+    const id = subscriptionId(parseParams(raw).delivery.url);
     if (!this.state.subscriptions[id]) return;
     this.end(id, this.now());
     await this.save();
@@ -313,40 +306,31 @@ export class EventHub {
   }
 
   private end(id: string, now: number): void {
-    const { name } = this.state.subscriptions[id]!;
     delete this.state.subscriptions[id];
     this.state.outbox = this.state.outbox.filter((o) => o.subscriptionId !== id);
-    if (!Object.values(this.state.subscriptions).some((s) => s.name === name))
-      (this.state.ended ??= {})[name] = now;
+    if (Object.keys(this.state.subscriptions).length === 0) this.state.endedAt = now;
   }
 
   /**
-   * Adds an event to the inbox and queues it for every subscription to its name; the next
-   * delivery tick sends it. An ID already in the inbox is ignored.
+   * Adds an event to the inbox and queues it for every subscription; the next delivery tick
+   * sends it. An ID already in the inbox is ignored.
    */
-  async emit(name: string, eventId: string, data: Record<string, unknown>): Promise<boolean> {
+  async emit(eventId: string, data: Record<string, unknown>): Promise<boolean> {
     const now = this.now();
     this.prune(now);
     if (this.state.inbox.some((e) => e.eventId === eventId)) return false;
-    this.state.inbox.push({ eventId, name, timestamp: now, data });
-    for (const { id, name: subscribed } of Object.values(this.state.subscriptions))
-      if (subscribed === name)
-        this.state.outbox.push({
-          eventId,
-          subscriptionId: id,
-          firstAt: now,
-          nextAt: now,
-          attempts: 0,
-        });
+    this.state.inbox.push({ eventId, name: DRAFT_FINISHED, timestamp: now, data });
+    for (const subscriptionId of Object.keys(this.state.subscriptions))
+      this.state.outbox.push({ eventId, subscriptionId, firstAt: now, nextAt: now, attempts: 0 });
     await this.save();
     this.log(`emitted ${eventId}`);
     return true;
   }
 
-  /** Unacknowledged events, oldest first, optionally of one name. */
-  pending(limit: number, name?: string) {
+  /** Unacknowledged events, oldest first. */
+  pending(limit: number) {
     return this.state.inbox
-      .filter((e) => e.ackedAt === undefined && (!name || e.name === name))
+      .filter((e) => e.ackedAt === undefined)
       .slice(0, limit)
       .map((e) => ({
         eventId: e.eventId,
@@ -377,15 +361,6 @@ export class EventHub {
 
   async setWatched(keys: string[]): Promise<void> {
     this.state.watched = keys;
-    await this.save();
-  }
-
-  inboxCursor(): string | undefined {
-    return this.state.inboxCursor;
-  }
-
-  async setInboxCursor(messageId: string): Promise<void> {
-    this.state.inboxCursor = messageId;
     await this.save();
   }
 
@@ -433,7 +408,6 @@ export class EventHub {
     this.state.lastDelivery = {
       at: now,
       eventId: event.eventId,
-      name: event.name,
       status,
       ...(failure ? { error: failure } : {}),
     };
@@ -527,25 +501,16 @@ export class EventHub {
 export async function eventStatus(file: StateFile): Promise<EventStatus> {
   const raw = await file.read();
   const state = raw === undefined ? undefined : parseState(raw);
-  const subscriptions = Object.values(state?.subscriptions ?? {});
   const last = state?.lastDelivery;
   return {
-    events: EVENT_NAMES.map((name) => {
-      const endedAt = state?.ended?.[name];
-      return {
-        name,
-        subscriptions: subscriptions.filter((s) => s.name === name).length,
-        pending: (state?.inbox ?? []).filter((e) => e.name === name && e.ackedAt === undefined)
-          .length,
-        ...(endedAt ? { endedAt: new Date(endedAt).toISOString() } : {}),
-      };
-    }),
+    subscriptions: Object.keys(state?.subscriptions ?? {}).length,
+    pending: (state?.inbox ?? []).filter((e) => e.ackedAt === undefined).length,
+    ...(state?.endedAt ? { endedAt: new Date(state.endedAt).toISOString() } : {}),
     queued: state?.outbox.length ?? 0,
     ...(last
       ? {
           lastDelivery: {
             at: new Date(last.at).toISOString(),
-            event: last.name,
             status: last.status,
             ...(last.error ? { error: last.error } : {}),
           },
@@ -554,20 +519,18 @@ export async function eventStatus(file: StateFile): Promise<EventStatus> {
   };
 }
 
-/** Events, then the last delivery, on one line for terminals. */
+/** The event, then the last delivery, on one line for terminals. */
 export function describeEvents(status: EventStatus): string {
-  const parts = status.events.map(({ name, subscriptions, pending, endedAt }) => {
-    const state = subscriptions
-      ? `subscribed (${subscriptions})`
-      : endedAt
-        ? `subscription ended ${endedAt} (ask your dot to subscribe again)`
-        : "not subscribed";
-    return `${name} ${state}, ${pending} pending`;
-  });
+  const state = status.subscriptions
+    ? `subscribed (${status.subscriptions})`
+    : status.endedAt
+      ? `subscription ended ${status.endedAt} (ask your dot to subscribe again)`
+      : "not subscribed";
+  const parts = [`${DRAFT_FINISHED} ${state}, ${status.pending} pending`];
   const last = status.lastDelivery;
   if (last)
     parts.push(
-      `last delivery ${last.at} ${last.event}: ${last.error ?? `HTTP ${last.status}`}, ${status.queued} queued`,
+      `last delivery ${last.at}: ${last.error ?? `HTTP ${last.status}`}, ${status.queued} queued`,
     );
   return parts.join(" | ");
 }

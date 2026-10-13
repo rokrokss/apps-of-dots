@@ -243,16 +243,7 @@ test(
     assert.equal(app.agentBotId, "900000000000000001");
     assert.equal(app.bridgeBotId, reddit.bridgeBot);
     assert.equal(app.events, true);
-    assert.deepEqual(
-      app.eventStatus.events.map((e: { name: string; subscriptions: number }) => [
-        e.name,
-        e.subscriptions,
-      ]),
-      [
-        ["reddit.draft.finished", 0],
-        ["reddit.activity.created", 0],
-      ],
-    );
+    assert.deepEqual(app.eventStatus, { subscriptions: 0, pending: 0, queued: 0 });
     assert.ok(!app.commands.join("\n").includes("login"));
     for (const secret of [reddit.botToken, reddit.tunnelKey])
       assert.ok(!JSON.stringify(state).includes(secret));
@@ -557,6 +548,6 @@ test("the setup center's event prompts match the Reddit guide", async () => {
   const prompts = [...html.matchAll(/data-copy="(Subscribe to the reddit\.[^"]+)"/g)].map(
     (match) => match[1]!,
   );
-  assert.equal(prompts.length, 2);
+  assert.equal(prompts.length, 1);
   for (const prompt of prompts) assert.ok(guide.includes(prompt), prompt);
 });

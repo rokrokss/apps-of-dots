@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
-import { DRAFT_FINISHED, EventHub } from "../src/events.js";
+import { EventHub } from "../src/events.js";
 import { isModern } from "../src/modern.js";
 import { serve, TOOL_COUNT } from "../src/server.js";
 import { channels, FakeDiscord } from "./fakes.js";
@@ -77,7 +77,7 @@ test("stdio serves the legacy handshake and MCP 2026-07-28 with events side by s
   assert.equal(tools.result.tools.length, TOOL_COUNT);
   assert.equal(tools.result.resultType, "complete");
 
-  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a", state: "posted" });
+  await hub.emit("draft:a:posted", { ref: "a", state: "posted" });
   const pending = await call("tools/call", {
     name: "reddit_get_pending_events",
     arguments: {},
@@ -93,11 +93,7 @@ test("stdio serves the legacy handshake and MCP 2026-07-28 with events side by s
   assert.deepEqual(JSON.parse(acked.result.content[0].text), { acknowledged: 1, pending: 0 });
 
   const events = await call("events/list", {});
-  assert.deepEqual(
-    events.result.events.map((e: { name: string }) => e.name),
-    ["reddit.draft.finished", "reddit.activity.created"],
-  );
-  assert.match(discover.result.instructions, /reddit\.activity\.created/);
+  assert.equal(events.result.events[0].name, "reddit.draft.finished");
   const refused = await call("events/subscribe", {
     name: "reddit.draft.finished",
     delivery: { mode: "webhook", url: "https://evil.example/cb", secret: "whsec_x" },

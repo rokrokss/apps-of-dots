@@ -47,10 +47,7 @@ test(
     assert.equal(JSON.parse((await command("start", "--json")).stdout).ready, true);
     const status = JSON.parse((await command("status", "--json")).stdout);
     assert.equal(status.processRunning, true);
-    assert.deepEqual(
-      status.events.events.map((e: { name: string; subscriptions: number }) => e.subscriptions),
-      [0, 0],
-    );
+    assert.deepEqual(status.events, { subscriptions: 0, pending: 0, queued: 0 });
     await assert.rejects(command("setup", "--skip-validation", "--json"), /Stop Reddit/);
     await writeFile(
       join(home, "tunnel-state", "apps-of-dots-reddit.log"),

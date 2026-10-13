@@ -20,8 +20,6 @@ export interface DiscordApi {
     channelId: string,
     page: { before?: string; after?: string; limit: number },
   ): Promise<ApiMessage[]>;
-  /** One message, or undefined if it was deleted. */
-  message(channelId: string, messageId: string): Promise<ApiMessage | undefined>;
 }
 
 const API = "https://discord.com/api/v10";
@@ -29,7 +27,7 @@ const MAX_RETRY_WAIT_MS = 5_000;
 
 export function restDiscord(token: string): DiscordApi {
   const headers = { Authorization: `Bot ${token}`, "Content-Type": "application/json" };
-  async function call(path: string, init: RequestInit = {}, missingOk = false): Promise<unknown> {
+  async function call(path: string, init: RequestInit = {}): Promise<unknown> {
     for (let attempt = 0; ; attempt++) {
       const res = await fetch(`${API}${path}`, {
         ...init,
@@ -44,7 +42,6 @@ export function restDiscord(token: string): DiscordApi {
           continue;
         }
       }
-      if (missingOk && res.status === 404) return undefined;
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(
@@ -73,10 +70,6 @@ export function restDiscord(token: string): DiscordApi {
       if (page.before) query.set("before", page.before);
       if (page.after) query.set("after", page.after);
       return (await call(`/channels/${channelId}/messages?${query}`)) as ApiMessage[];
-    },
-    async message(channelId, messageId) {
-      return (await call(`/channels/${channelId}/messages/${messageId}`, {}, true)) as
-        ApiMessage | undefined;
     },
   };
 }

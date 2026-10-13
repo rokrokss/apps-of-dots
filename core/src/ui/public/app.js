@@ -273,26 +273,20 @@ async function renderLogin(job) {
   }
   $("password-form").hidden = !challenge;
 }
-// Reddit's MCP Events: whether a dot subscribed, and how the last delivery went.
+// Reddit's MCP Event: whether a dot subscribed, and how the last delivery went.
 function renderEvents(app) {
   const shown = selected === "reddit" && app.configured;
   $("reddit-events").hidden = !shown;
   if (!shown) return;
   const status = app.eventStatus;
-  for (const [id, name] of [
-    ["draft", "reddit.draft.finished"],
-    ["activity", "reddit.activity.created"],
-  ]) {
-    const event = status?.events.find((item) => item.name === name);
-    const waiting = event?.pending ? ` · ${event.pending} waiting` : "";
-    $(`event-status-${id}`).textContent = !event
-      ? ""
-      : event.subscriptions
-        ? `Subscribed${waiting}`
-        : event.endedAt
-          ? "Subscription ended · subscribe again"
-          : "Not subscribed";
-  }
+  const waiting = status?.pending ? ` · ${status.pending} waiting` : "";
+  $("event-status").textContent = !status
+    ? ""
+    : status.subscriptions
+      ? `Subscribed${waiting}`
+      : status.endedAt
+        ? "Subscription ended · subscribe again"
+        : "Not subscribed";
   const last = status?.lastDelivery;
   const when = last && new Date(last.at).toLocaleString();
   $("event-delivery").textContent = !last

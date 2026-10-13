@@ -8,7 +8,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { z } from "zod";
 import { restDiscord, type DiscordApi } from "./discord.js";
 import { drafts, watchDrafts } from "./drafts.js";
-import { ACTIVITY_CREATED, DRAFT_FINISHED, EventHub, stateFile } from "./events.js";
+import { EventHub, stateFile } from "./events.js";
 import { isModern, modernHandler } from "./modern.js";
 import { frame, MAX_TEXT, MAX_TITLE, PARENT, readMessage, REF } from "./protocol.js";
 
@@ -47,12 +47,6 @@ export function createServer(
   events?: EventHub,
 ): McpServer {
   const server = new McpServer({ name: "apps-of-dots-reddit", version: SERVER_VERSION });
-  // Activity text is read when asked for, so items deleted on Reddit are gone here too.
-  const liveItem = async (messageId: string) => {
-    const message = await discord.message(channels.inboxChannelId, messageId);
-    const read = message ? readMessage(message) : undefined;
-    return read ? { ...read.envelope, text: read.text } : null;
-  };
   const send = async (envelope: Record<string, unknown>, text: string) => {
     const messageId = await discord.send(channels.outboxChannelId, frame(envelope, text));
     return reply({
@@ -191,30 +185,15 @@ export function createServer(
     {
       title: "Get pending Reddit events",
       description:
-        "Unacknowledged events, oldest first. Pass the name of the event that fired so other " +
-        "events stay for their own handlers. reddit.draft.finished events have the draft's " +
-        "ref, state and url or reason; reddit.activity.created events have the post or comment " +
-        "as item, read now, or item null if it was deleted or removed. Call it every time an " +
-        "event fires, with or without its data, then call reddit_acknowledge_events with the " +
-        "eventIds you finished.",
+        "Unacknowledged reddit.draft.finished events, oldest first, each with its draft's ref, " +
+        "state and url or reason. Call it every time the event fires, with or without its data, " +
+        "then call reddit_acknowledge_events with the eventIds you finished.",
       inputSchema: {
-        name: z
-          .enum([DRAFT_FINISHED, ACTIVITY_CREATED])
-          .optional()
-          .describe("Only events with this name."),
         limit: z.int().min(1).max(20).default(10).describe("At most this many events."),
       },
-      annotations: { readOnlyHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ name, limit }) => {
-      if (!events) return noEvents;
-      const list: unknown[] = [];
-      for (const event of events.pending(limit, name)) {
-        if (event.name !== ACTIVITY_CREATED) list.push(event);
-        else list.push({ ...event, item: await liveItem(String(event.data.messageId)) });
-      }
-      return reply({ events: list });
-    },
+    async ({ limit }) => (events ? reply({ events: events.pending(limit) }) : noEvents),
   );
 
   server.registerTool(
@@ -245,7 +224,6 @@ export async function inspectTools() {
     me: () => Promise.reject(new Error("offline")),
     send: () => Promise.reject(new Error("offline")),
     messages: () => Promise.reject(new Error("offline")),
-    message: () => Promise.reject(new Error("offline")),
   };
   const server = createServer(offline, {
     outboxChannelId: "0",
