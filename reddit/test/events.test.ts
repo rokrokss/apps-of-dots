@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  ACTIVITY_CREATED,
+  DRAFT_FINISHED,
   EventError,
   EventHub,
   sign,
@@ -8,8 +10,8 @@ import {
   type Post,
   type StateFile,
 } from "../src/events.js";
-import { scanDrafts } from "../src/drafts.js";
-import { AGENT, BRIDGE, channels, FakeDiscord } from "./fakes.js";
+import { scanActivity, scanDrafts } from "../src/drafts.js";
+import { AGENT, BRIDGE, channels, connect, FakeDiscord } from "./fakes.js";
 
 const URL_A = "https://connectors.api.openai.com/mcp/events/a";
 const SECRET = "whsec_" + Buffer.alloc(32, 1).toString("base64");
@@ -118,7 +120,7 @@ test("subscribing verifies the callback with a signed challenge, once per secret
   assert.ok(signedBy(target.calls[1]!, [SECRET_2]));
 
   // Until the overlap ends, deliveries are signed with both secrets.
-  await hub.emit("draft:a:posted", { ref: "a", state: "posted" });
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a", state: "posted" });
   await hub.deliverDue();
   const delivery = target.calls[2]!;
   assert.equal(delivery.headers["webhook-signature"]!.split(" ").length, 2);
@@ -174,7 +176,11 @@ test("events are delivered signed, retried with backoff, and end the subscriptio
   target.calls.length = 0;
 
   target.answer = { status: 500 };
-  await hub.emit("draft:a:posted", { ref: "a", state: "posted", url: "https://redd.it/a" });
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", {
+    ref: "a",
+    state: "posted",
+    url: "https://redd.it/a",
+  });
   await hub.deliverDue();
   const [first] = target.calls;
   assert.deepEqual(JSON.parse(first!.body), {
@@ -207,14 +213,14 @@ test("events are delivered signed, retried with backoff, and end the subscriptio
 
   // 413 drops the event; 410 ends the subscription. The inbox keeps both events.
   target.answer = { status: 413 };
-  await hub.emit("draft:b:posted", { ref: "b", state: "posted" });
+  await hub.emit(DRAFT_FINISHED, "draft:b:posted", { ref: "b", state: "posted" });
   await hub.deliverDue();
   assert.deepEqual(file.state.outbox, []);
   target.answer = { status: 410 };
-  await hub.emit("draft:c:failed", { ref: "c", state: "failed" });
+  await hub.emit(DRAFT_FINISHED, "draft:c:failed", { ref: "c", state: "failed" });
   await hub.deliverDue();
   assert.deepEqual(file.state.subscriptions, {});
-  await hub.emit("draft:d:posted", { ref: "d", state: "posted" });
+  await hub.emit(DRAFT_FINISHED, "draft:d:posted", { ref: "d", state: "posted" });
   assert.deepEqual(file.state.outbox, []);
   assert.equal(hub.pending(10).length, 4);
 });
@@ -224,7 +230,7 @@ test("delivery gives up a day after the event", async () => {
   const { hub, file, advance } = await open(new MemoryFile(), target.post);
   await hub.subscribe(subscribeParams());
   target.answer = { status: 503 };
-  await hub.emit("draft:a:posted", { ref: "a", state: "posted" });
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a", state: "posted" });
   await hub.deliverDue();
   advance(DAY + 1);
   await hub.deliverDue();
@@ -234,9 +240,9 @@ test("delivery gives up a day after the event", async () => {
 
 test("the inbox keeps events until acknowledged, then for a week, and survives a restart", async () => {
   const { hub, file, advance } = await open();
-  assert.equal(await hub.emit("draft:a:posted", { ref: "a" }), true);
-  assert.equal(await hub.emit("draft:a:posted", { ref: "a" }), false);
-  await hub.emit("draft:b:rejected", { ref: "b" });
+  assert.equal(await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a" }), true);
+  assert.equal(await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a" }), false);
+  await hub.emit(DRAFT_FINISHED, "draft:b:rejected", { ref: "b" });
   assert.deepEqual(
     hub.pending(10).map((e) => e.eventId),
     ["draft:a:posted", "draft:b:rejected"],
@@ -256,7 +262,7 @@ test("the inbox keeps events until acknowledged, then for a week, and survives a
   assert.deepEqual(await hub.acknowledge(["draft:a:posted"]), { acknowledged: 0, pending: 1 });
 
   advance(8 * DAY);
-  await hub.emit("draft:c:posted", { ref: "c" });
+  await hub.emit(DRAFT_FINISHED, "draft:c:posted", { ref: "c" });
   assert.deepEqual(
     file.state.inbox.map((e: { eventId: string }) => e.eventId),
     ["draft:b:rejected", "draft:c:posted"],
@@ -357,11 +363,171 @@ test("unsubscribing by event name and callback URL stops deliveries", async () =
   await hub.subscribe(subscribeParams());
   await hub.unsubscribe({ name: "reddit.draft.finished", delivery: { url: URL_A } });
   assert.deepEqual(file.state.subscriptions, {});
-  await hub.emit("draft:a:posted", { ref: "a", state: "posted" });
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a", state: "posted" });
   await hub.deliverDue();
   assert.equal(target.calls.length, 1);
   await assert.rejects(
     hub.unsubscribe({ name: "reddit.other", delivery: { url: URL_A } }),
     refused(-32602),
   );
+});
+
+test("each event has its own subscription per callback URL", async () => {
+  const target = callback();
+  const { hub, file } = await open(new MemoryFile(), target.post);
+  const drafts = await hub.subscribe(subscribeParams());
+  const activity = await hub.subscribe({ ...subscribeParams(), name: ACTIVITY_CREATED });
+  // The first release hashed the same way, so its subscriptions keep their IDs.
+  assert.equal(drafts.id, "sub_3c017b7a61a7599a67b68febb9aaf356");
+  assert.equal(activity.id, "sub_f8825ae486d3817668c7a64948939de5");
+  target.calls.length = 0;
+
+  await hub.emit(DRAFT_FINISHED, "draft:a:posted", { ref: "a" });
+  await hub.emit(ACTIVITY_CREATED, "activity:t1_x", { thing: "t1_x" });
+  await hub.deliverDue();
+  assert.deepEqual(
+    target.calls.map((c) => [c.headers["X-MCP-Subscription-Id"], c.headers["webhook-id"]]),
+    [
+      [drafts.id, "draft:a:posted"],
+      [activity.id, "activity:t1_x"],
+    ],
+  );
+  assert.deepEqual(
+    hub.pending(10, ACTIVITY_CREATED).map((e) => e.eventId),
+    ["activity:t1_x"],
+  );
+  assert.equal(hub.pending(10).length, 2);
+
+  await hub.unsubscribe({ name: ACTIVITY_CREATED, delivery: { url: URL_A } });
+  assert.deepEqual(Object.keys(file.state.subscriptions), [drafts.id]);
+
+  // A subscription saved before there were two events is for finished drafts.
+  const saved = file.state;
+  delete saved.subscriptions[drafts.id].name;
+  const older = Object.assign(new MemoryFile(), { value: JSON.stringify(saved) });
+  const reopened = await EventHub.open({ file: older, post: target.post, log: () => {} });
+  target.calls.length = 0;
+  await reopened.emit(ACTIVITY_CREATED, "activity:t1_y", { thing: "t1_y" });
+  await reopened.emit(DRAFT_FINISHED, "draft:b:posted", { ref: "b" });
+  await reopened.deliverDue();
+  assert.deepEqual(
+    target.calls.map((c) => c.headers["webhook-id"]),
+    ["draft:b:posted"],
+  );
+});
+
+const INBOX = channels.inboxChannelId;
+const WEBHOOK = "700000000000000001";
+
+function inboxItem(discord: FakeDiscord, envelope: Record<string, unknown>, text = "hello") {
+  return discord.add(INBOX, {
+    author: { id: WEBHOOK },
+    webhook_id: WEBHOOK,
+    content: JSON.stringify({ v: 1, byApp: false, truncated: false, ...envelope }),
+    embeds: [{ description: text }],
+  });
+}
+
+const comment = (thing: string, extra: Record<string, unknown> = {}) => ({
+  event: "comment",
+  thing,
+  post: "t3_old",
+  parent: "t3_old",
+  author: "someone",
+  url: `https://www.reddit.com/r/x/comments/old/${thing}/`,
+  created: "2026-10-13T00:00:00Z",
+  ...extra,
+});
+
+test("the activity watcher starts at the end of the inbox, then emits new items by reference", async () => {
+  const discord = new FakeDiscord();
+  const old = inboxItem(discord, { event: "post", thing: "t3_old", title: "Old", author: "u" });
+  const { hub, file } = await open();
+  await scanActivity(hub, discord, channels);
+  assert.deepEqual(hub.pending(10), []);
+  assert.equal(file.state.inboxCursor, old);
+
+  const added = inboxItem(discord, comment("t1_new"), "Nice post");
+  inboxItem(discord, comment("t1_mine", { author: "rokrokssss", byApp: true }));
+  const last = discord.add(INBOX, {
+    author: { id: AGENT },
+    content: JSON.stringify({ v: 1, event: "comment", thing: "t1_fake" }),
+  });
+  await scanActivity(hub, discord, channels);
+  await scanActivity(hub, discord, channels);
+  assert.deepEqual(
+    hub.pending(10).map((e) => [e.eventId, e.name, e.data]),
+    [
+      [
+        "activity:t1_new",
+        ACTIVITY_CREATED,
+        {
+          thing: "t1_new",
+          kind: "comment",
+          post: "t3_old",
+          parent: "t3_old",
+          url: "https://www.reddit.com/r/x/comments/old/t1_new/",
+          created: "2026-10-13T00:00:00Z",
+          messageId: added,
+        },
+      ],
+    ],
+  );
+  assert.equal(file.state.inboxCursor, last);
+
+  // After a restart it reads on from the saved cursor, across pages, in order.
+  for (let i = 0; i < 150; i++) inboxItem(discord, comment(`t1_bulk${i}`));
+  const restarted = await EventHub.open({ file, log: () => {} });
+  await scanActivity(restarted, discord, channels);
+  const ids = file.state.inbox.map((e: { eventId: string }) => e.eventId);
+  assert.equal(ids.length, 151);
+  assert.deepEqual(ids.slice(0, 3), ["activity:t1_new", "activity:t1_bulk0", "activity:t1_bulk1"]);
+  assert.equal(ids.at(-1), "activity:t1_bulk149");
+
+  // An empty inbox starts at the beginning.
+  const empty = new FakeDiscord();
+  const fresh = await open();
+  await scanActivity(fresh.hub, empty, channels);
+  assert.equal(fresh.file.state.inboxCursor, "0");
+  inboxItem(empty, comment("t1_first"));
+  await scanActivity(fresh.hub, empty, channels);
+  assert.deepEqual(
+    fresh.hub.pending(10).map((e) => e.eventId),
+    ["activity:t1_first"],
+  );
+});
+
+test("pending activity carries the item's current text, or null once Reddit deleted it", async () => {
+  const discord = new FakeDiscord();
+  const { hub } = await open();
+  const call = await connect(discord, hub);
+  await scanActivity(hub, discord, channels);
+  inboxItem(discord, comment("t1_kept"), "still here");
+  const gone = inboxItem(discord, comment("t1_gone"), "deleted soon");
+  await scanActivity(hub, discord, channels);
+  await hub.emit(DRAFT_FINISHED, "draft:x:posted", { ref: "x", state: "posted" });
+  // The bridge deletes the copy when the comment is deleted on Reddit.
+  discord.stored.set(
+    INBOX,
+    discord.stored.get(INBOX)!.filter((m) => m.id !== gone),
+  );
+
+  const activity = await call("reddit_get_pending_events", { name: ACTIVITY_CREATED });
+  assert.deepEqual(
+    activity.events.map((e: { eventId: string; item: { text: string } | null }) => [
+      e.eventId,
+      e.item && e.item.text,
+    ]),
+    [
+      ["activity:t1_kept", "still here"],
+      ["activity:t1_gone", null],
+    ],
+  );
+  assert.equal(activity.events[0].item.author, "someone");
+  const drafts = await call("reddit_get_pending_events", { name: DRAFT_FINISHED });
+  assert.deepEqual(
+    drafts.events.map((e: { item?: unknown }) => e.item),
+    [undefined],
+  );
+  assert.equal((await call("reddit_get_pending_events")).events.length, 3);
 });

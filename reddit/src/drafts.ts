@@ -1,12 +1,13 @@
 import type { ApiMessage, DiscordApi } from "./discord.js";
-import type { EventHub } from "./events.js";
+import { ACTIVITY_CREATED, DRAFT_FINISHED, type EventHub } from "./events.js";
 import { readMessage } from "./protocol.js";
 import type { Channels } from "./server.js";
 
-// Draft states read from the outbox, and the watcher that turns finished drafts into
-// reddit.draft.finished events.
+// Draft states read from the outbox, and the watcher that turns finished drafts and new inbox
+// activity into events.
 
 const SCAN_PAGES = 3;
+const ACTIVITY_PAGES = 3;
 const FINAL_STATES = new Set(["posted", "rejected", "failed", "expired"]);
 
 export type Draft = {
@@ -106,16 +107,62 @@ export async function scanDrafts(
     for (const [i, draft] of finished.entries()) {
       if (seen.includes(keys[i]!)) continue;
       const { requestMessageId: _, ...data } = draft;
-      await hub.emit(
-        keys[i]!,
-        Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)),
-      );
+      await hub.emit(DRAFT_FINISHED, keys[i]!, defined(data));
     }
   }
   await hub.setWatched(keys);
 }
 
-/** Scans the outbox now and then every interval until stopped. */
+/**
+ * Emits one event per post or comment the bridge copied to the inbox since the last scan,
+ * except the bridge's own. Events hold references only; the text stays in Discord, where it
+ * follows deletions on Reddit. The first scan only records where the inbox ends.
+ */
+export async function scanActivity(
+  hub: EventHub,
+  discord: DiscordApi,
+  channels: Channels,
+): Promise<void> {
+  const channelId = channels.inboxChannelId;
+  let cursor = hub.inboxCursor();
+  if (cursor === undefined) {
+    const [newest] = await discord.messages(channelId, { limit: 1 });
+    return hub.setInboxCursor(newest?.id ?? "0");
+  }
+  for (let page = 0; page < ACTIVITY_PAGES; page++) {
+    const batch = await discord.messages(channelId, { after: cursor, limit: 100 });
+    if (batch.length === 0) break;
+    batch.sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
+    for (const message of batch) {
+      // Only the bridge's webhook writes events, as in reddit_list_activity.
+      const e = message.webhook_id ? readMessage(message)?.envelope : undefined;
+      if ((e?.event !== "post" && e?.event !== "comment") || typeof e.thing !== "string") continue;
+      if (e.byApp === true) continue;
+      await hub.emit(
+        ACTIVITY_CREATED,
+        `activity:${e.thing}`,
+        defined({
+          thing: e.thing,
+          kind: e.event,
+          post: e.post,
+          parent: e.parent,
+          url: e.url,
+          created: e.created,
+          messageId: message.id,
+        }),
+      );
+    }
+    cursor = batch.at(-1)!.id;
+    await hub.setInboxCursor(cursor);
+    if (batch.length < 100) break;
+  }
+}
+
+function defined(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined));
+}
+
+/** Scans the outbox and the inbox now and then every interval until stopped. */
 export function watchDrafts(
   hub: EventHub,
   discord: DiscordApi,
@@ -126,13 +173,17 @@ export function watchDrafts(
   const tick = async () => {
     if (running) return;
     running = true;
-    try {
-      await scanDrafts(hub, discord, channels);
-    } catch (error) {
-      console.error(`[events] draft scan failed: ${(error as Error).message}`);
-    } finally {
-      running = false;
+    for (const [label, scan] of [
+      ["draft", scanDrafts],
+      ["activity", scanActivity],
+    ] as const) {
+      try {
+        await scan(hub, discord, channels);
+      } catch (error) {
+        console.error(`[events] ${label} scan failed: ${(error as Error).message}`);
+      }
     }
+    running = false;
   };
   const timer = setInterval(() => void tick(), intervalMs);
   timer.unref();

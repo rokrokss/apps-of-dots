@@ -40,10 +40,15 @@
     },
     {
       "name": "reddit_get_pending_events",
-      "description": "Unacknowledged reddit.draft.finished events, oldest first, each with its draft's ref, state and url or reason. Call it every time the event fires, with or without its data, then call reddit_acknowledge_events with the eventIds you finished.",
+      "description": "Unacknowledged events, oldest first. Pass the name of the event that fired so other events stay for their own handlers. reddit.draft.finished events have the draft's ref, state and url or reason; reddit.activity.created events have the post or comment as item, read now, or item null if it was deleted or removed. Call it every time an event fires, with or without its data, then call reddit_acknowledge_events with the eventIds you finished.",
       "inputSchema": {
         "type": "object",
         "properties": {
+          "name": {
+            "description": "Only events with this name.",
+            "type": "string",
+            "enum": ["reddit.draft.finished", "reddit.activity.created"]
+          },
           "limit": {
             "default": 10,
             "description": "At most this many events.",

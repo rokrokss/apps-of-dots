@@ -8,6 +8,8 @@ import { privateWrite, readOptional } from "@apps-of-dots/runtime";
 // (https://www.standardwebhooks.com/). The tunnel's server is the only writer of the state file.
 
 export const DRAFT_FINISHED = "reddit.draft.finished";
+export const ACTIVITY_CREATED = "reddit.activity.created";
+const EVENT_NAMES = [DRAFT_FINISHED, ACTIVITY_CREATED];
 export const CALLBACK_HOSTS = ["connectors.api.openai.com"];
 
 const MINUTE = 60_000;
@@ -31,6 +33,7 @@ export class EventError extends Error {
 
 type Subscription = {
   id: string;
+  name: string;
   url: string;
   secret: string;
   previousSecret?: string;
@@ -59,6 +62,8 @@ type State = {
   outbox: OutboxItem[];
   /** Finished drafts the watcher has already seen; absent until its first scan. */
   watched?: string[];
+  /** The newest inbox message the watcher has seen; absent until its first scan. */
+  inboxCursor?: string;
 };
 
 export interface StateFile {
@@ -131,11 +136,9 @@ function checkCallback(raw: string, hosts: readonly string[]): void {
     throw new Error(`callback host ${url.hostname} is not allowed`);
 }
 
-/** Stable per callback URL: one event, no arguments. */
-function subscriptionId(url: string): string {
-  return (
-    "sub_" + createHash("sha256").update(`${DRAFT_FINISHED}\0${url}`).digest("hex").slice(0, 32)
-  );
+/** Stable per event and callback URL; the events take no arguments. */
+function subscriptionId(name: string, url: string): string {
+  return "sub_" + createHash("sha256").update(`${name}\0${url}`).digest("hex").slice(0, 32);
 }
 
 const params = z.object({
@@ -153,7 +156,7 @@ function parseParams(raw: unknown) {
   const parsed = params.safeParse(raw);
   if (!parsed.success) throw new EventError(-32602, "invalid params");
   const p = parsed.data;
-  if (p.name !== DRAFT_FINISHED) throw new EventError(-32602, `unknown event ${p.name}`);
+  if (!EVENT_NAMES.includes(p.name)) throw new EventError(-32602, `unknown event ${p.name}`);
   if (p.arguments && Object.keys(p.arguments).length > 0)
     throw new EventError(-32602, "this event takes no arguments");
   return p;
@@ -174,8 +177,12 @@ function parseState(raw: string): State {
       typeof state.subscriptions === "object" &&
       Array.isArray(state.inbox) &&
       Array.isArray(state.outbox)
-    )
+    ) {
+      // Subscriptions saved before there were two events are for finished drafts.
+      for (const subscription of Object.values(state.subscriptions))
+        subscription.name ??= DRAFT_FINISHED;
       return state;
+    }
   } catch {
     // Reported below.
   }
@@ -249,7 +256,7 @@ export class EventHub {
         reason: "invalid_url",
       });
     }
-    const id = subscriptionId(p.delivery.url);
+    const id = subscriptionId(p.name, p.delivery.url);
     const existing = this.state.subscriptions[id];
     // A refresh with the secret already verified skips the challenge.
     if (existing?.secret !== secret) {
@@ -265,6 +272,7 @@ export class EventHub {
     const now = this.now();
     const subscription: Subscription = {
       id,
+      name: p.name,
       url: p.delivery.url,
       secret,
       createdAt: existing?.createdAt ?? now,
@@ -284,7 +292,8 @@ export class EventHub {
   }
 
   async unsubscribe(raw: unknown): Promise<void> {
-    const id = subscriptionId(parseParams(raw).delivery.url);
+    const p = parseParams(raw);
+    const id = subscriptionId(p.name, p.delivery.url);
     if (!this.state.subscriptions[id]) return;
     delete this.state.subscriptions[id];
     this.state.outbox = this.state.outbox.filter((o) => o.subscriptionId !== id);
@@ -293,25 +302,32 @@ export class EventHub {
   }
 
   /**
-   * Adds an event to the inbox and queues it for every subscription; the next delivery tick
-   * sends it. An ID already in the inbox is ignored.
+   * Adds an event to the inbox and queues it for every subscription to its name; the next
+   * delivery tick sends it. An ID already in the inbox is ignored.
    */
-  async emit(eventId: string, data: Record<string, unknown>): Promise<boolean> {
+  async emit(name: string, eventId: string, data: Record<string, unknown>): Promise<boolean> {
     const now = this.now();
     this.prune(now);
     if (this.state.inbox.some((e) => e.eventId === eventId)) return false;
-    this.state.inbox.push({ eventId, name: DRAFT_FINISHED, timestamp: now, data });
-    for (const subscriptionId of Object.keys(this.state.subscriptions))
-      this.state.outbox.push({ eventId, subscriptionId, firstAt: now, nextAt: now, attempts: 0 });
+    this.state.inbox.push({ eventId, name, timestamp: now, data });
+    for (const { id, name: subscribed } of Object.values(this.state.subscriptions))
+      if (subscribed === name)
+        this.state.outbox.push({
+          eventId,
+          subscriptionId: id,
+          firstAt: now,
+          nextAt: now,
+          attempts: 0,
+        });
     await this.save();
     this.log(`emitted ${eventId}`);
     return true;
   }
 
-  /** Unacknowledged events, oldest first. */
-  pending(limit: number) {
+  /** Unacknowledged events, oldest first, optionally of one name. */
+  pending(limit: number, name?: string) {
     return this.state.inbox
-      .filter((e) => e.ackedAt === undefined)
+      .filter((e) => e.ackedAt === undefined && (!name || e.name === name))
       .slice(0, limit)
       .map((e) => ({
         eventId: e.eventId,
@@ -342,6 +358,15 @@ export class EventHub {
 
   async setWatched(keys: string[]): Promise<void> {
     this.state.watched = keys;
+    await this.save();
+  }
+
+  inboxCursor(): string | undefined {
+    return this.state.inboxCursor;
+  }
+
+  async setInboxCursor(messageId: string): Promise<void> {
+    this.state.inboxCursor = messageId;
     await this.save();
   }
 
